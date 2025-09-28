@@ -167,8 +167,20 @@ class WebHTMLDesigner:
             original_prompt = self.designer.config.get('prompts', {}).get('user_prompt', '')
             self.designer.config['prompts']['user_prompt'] = prompt
             
-            # HTML 생성
-            html_content, metadata = self.designer.generate_html()
+            # HTML 생성 (Google 실패 시 모델 자동 폴백)
+            try:
+                html_content, metadata = self.designer.generate_html()
+            except Exception as gen_err:
+                logger.warning(f"1차 생성 실패, 모델 폴백 시도: {gen_err}")
+                original_model = self.designer.config.get('ai_settings', {}).get('model')
+                # 우선 빠른 모델로 폴백
+                self.designer.config['ai_settings']['model'] = 'fast'
+                try:
+                    html_content, metadata = self.designer.generate_html()
+                except Exception as gen_err2:
+                    logger.warning(f"2차 생성 실패, 스마트 모델 폴백 시도: {gen_err2}")
+                    self.designer.config['ai_settings']['model'] = 'smart'
+                    html_content, metadata = self.designer.generate_html()
             
             # config 복원
             self.designer.config = original_config
