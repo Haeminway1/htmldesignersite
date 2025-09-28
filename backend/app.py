@@ -58,12 +58,12 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB 제한
 # CORS 설정
 CORS(app, origins=["*"])  # 프로덕션에서는 특정 도메인으로 제한
 
-# Rate Limiting 설정
+# Rate Limiting 설정 (flask-limiter v3.x 호환)
 limiter = Limiter(
-    app,
     key_func=get_remote_address,
-    default_limits=["100 per hour", "5 per minute"]
+    default_limits=["100 per hour", "5 per minute"],
 )
+limiter.init_app(app)
 
 # 로깅 설정
 logging.basicConfig(
