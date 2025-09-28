@@ -1,0 +1,554 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Google Gemini & Veo — API Documentation (ai_api_module 규격판)
+
+> 본 문서는 사용자가 제공한 Google(Gemini & Veo) 문서를 **OpenAI 문서와 동일한 목차 규격**으로 재구성한 것입니다. ai_api_module(통합 인터페이스)에서 바로 매핑이 가능하도록 **모델/도구/파라미터/한도**를 일관된 형식으로 정리했습니다.
+
+---
+
+## Table of Contents
+
+1. [Introduction](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#introduction)
+    
+2. [Models](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#models)
+    
+3. [Core Capabilities](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#core-capabilities)
+    
+4. [API Features](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#api-features)
+    
+5. [Developer Tools](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#developer-tools)
+    
+6. [Pricing & Limits](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#pricing--limits)
+    
+7. [Best Practices](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#best-practices)
+    
+8. [ai_api_module Integration Notes](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#ai_api_module-integration-notes)
+    
+9. [Additional Resources](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#additional-resources)
+    
+
+---
+
+## Introduction
+
+### Quick Start
+
+**Python**
+
+```python
+from google import genai
+
+client = genai.Client()  # API Key는 환경변수 또는 초기화 인자로 설정
+
+# 텍스트 생성(기본)
+resp = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents="Explain how AI works in a few words",
+)
+print(resp.text)
+```
+
+**JavaScript (개요)**
+
+```javascript
+import { Client } from "@google/generative-ai"; // 실제 패키지명은 google-genai SDK 기준
+const client = new Client({ apiKey: process.env.GEMINI_API_KEY });
+
+const resp = await client.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: "Explain how AI works in a few words",
+});
+console.log(resp.text);
+```
+
+> **파일 처리 규칙 요약**: 총 요청 크기(텍스트+시스템+파일)가 **≤20MB**이면 inline bytes 가능, 초과 시 **Files API 업로드** 권장.
+
+---
+
+## Models
+
+### Model Families
+
+- **Gemini 2.5 Pro**: 복합 추론/코딩/멀티모달 고성능.
+    
+- **Gemini 2.5 Flash**: 비용 효율/속도 우선, 상황 적응형 추론.
+    
+- **Gemini 2.5 Flash-Lite**: 가장 비용 효율적, 대량 처리.
+    
+- **Gemini Live 2.5 Flash (Preview)**: 저지연 양방향(음성/비디오) I/O.
+    
+- **Gemini 2.5 Flash Image Preview**: **정교한 이미지 생성/편집**.
+    
+- **Gemini 2.5 Pro/Flash Preview TTS**: 저지연, 단/다화자 TTS.
+    
+- **이미지 생성(Imagen)**: 이미지 전용 모델(예시로 연계 가능).
+    
+- **Veo 3 / Veo 3 Fast**: **텍스트/이미지 → 비디오(오디오 동시 생성)**, 8s, 720p/1080p.
+    
+- **Veo 2**: 720p, 무음 비디오.
+    
+
+### Typical Aliases (ai_api_module)
+
+- `gemini-pro` → `gemini-2.5-pro`
+    
+- `gemini-flash` → `gemini-2.5-flash`
+    
+- `gemini-image` → `gemini-2.5-flash-image-preview`
+    
+- `veo-3` → `veo-3.0-generate-001` (또는 fast)
+    
+
+---
+
+## Core Capabilities
+
+### Text Generation
+
+**기본**
+
+```python
+resp = client.models.generate_content(
+  model="gemini-2.5-flash",
+  contents="How does AI work?"
+)
+print(resp.text)
+```
+
+**Thinking (2.5)** — 품질 향상을 위한 사고(생각) 단계. Flash는 `thinking_budget=0`으로 비활성화 가능.
+
+```python
+from google.genai import types
+resp = client.models.generate_content(
+  model="gemini-2.5-flash",
+  contents="How does AI work?",
+  config=types.GenerateContentConfig(
+    thinking_config=types.ThinkingConfig(thinking_budget=0)
+  ),
+)
+```
+
+**System Instructions / Temperature**
+
+```python
+from google.genai import types
+resp = client.models.generate_content(
+  model="gemini-2.5-flash",
+  contents=["Explain how AI works"],
+  config=types.GenerateContentConfig(
+    system_instruction="You are a cat named Neko.",
+    temperature=0.1,
+  ),
+)
+```
+
+### Structured Outputs
+
+- **JSON Schema**: `response_mime_type="application/json"`, `response_schema`로 제약.
+    
+- **Enum**: `response_mime_type='text/x.enum'`, enum 스키마 지정.
+    
+- **JSON Schema(Preview)**: `response_json_schema`(2.5 한정), 일부 제한 존재.
+    
+
+```python
+from google import genai
+from pydantic import BaseModel
+
+class Recipe(BaseModel):
+    recipe_name: str
+    ingredients: list[str]
+
+client = genai.Client()
+resp = client.models.generate_content(
+  model="gemini-2.5-flash",
+  contents="List cookie recipes with ingredient amounts",
+  config={
+    "response_mime_type": "application/json",
+    "response_schema": list[Recipe],
+  },
+)
+print(resp.text)  # 또는 resp.parsed
+```
+
+### Image Generation & Understanding
+
+- **생성(Text→Image)**, **편집(Text+Image→Image)**, **멀티 이미지 합성/스타일 전이**.
+    
+- **SynthID 워터마크** 포함.
+    
+
+```python
+from google import genai
+client = genai.Client()
+
+# Text → Image
+prompt = "Create a picture of a nano banana dish in a fancy restaurant with a Gemini theme"
+img_resp = client.models.generate_content(
+    model="gemini-2.5-flash-image-preview",
+    contents=[prompt],
+)
+# inline_data를 파일로 저장 처리
+```
+
+**이미지 이해(캡션/질의응답/분류)**
+
+```python
+from google.genai import types
+with open('small.jpg','rb') as f:
+    image_bytes = f.read()
+resp = client.models.generate_content(
+  model="gemini-2.5-flash",
+  contents=[
+    types.Part.from_bytes(data=image_bytes, mime_type='image/jpeg'),
+    'Caption this image.'
+  ]
+)
+print(resp.text)
+```
+
+**객체 검출/세그멘테이션(2.0/2.5)**: JSON으로 박스/마스크 반환(0~1000 정규좌표). 마스크는 base64 PNG 확률맵 → 임계값(약 127)으로 이진화.
+
+**지원 이미지 포맷**: `image/png, image/jpeg, image/webp, image/heic, image/heif`
+
+**토큰(이미지)**
+
+- 2.0/2.5: 384px 이하 1타일=**258 tokens**. 더 크면 768×768 타일로 분할(타일당 258 토큰).
+    
+
+### Audio Understanding
+
+- **설명/요약/Q&A/전사** 가능. **MM:SS 타임스탬프** 지정 지원.
+    
+- **입력 방식**: inline(≤20MB) 또는 Files API 업로드(>20MB/재사용).
+    
+- **토큰**: **초당 32 tokens**(오디오).
+    
+- **최대 길이**: 단일 프롬프트 총합 **~9.5시간**(모델/컨텍스트 한도 내).
+    
+- **지원 포맷**: `audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac`
+    
+
+```python
+from google import genai
+from google.genai import types
+client = genai.Client()
+
+myfile = client.files.upload(file='path/to/sample.mp3')
+resp = client.models.generate_content(
+  model='gemini-2.5-flash',
+  contents=['Generate a transcript of the speech.', myfile]
+)
+print(resp.text)
+```
+
+### Document (PDF) Understanding
+
+- **PDF 네이티브 비전**: 텍스트/표/도식/차트까지 해석. **최대 1000페이지**.
+    
+- **입력**: inline(≤20MB) 또는 Files API(>20MB/대형/재사용). 여러 PDF 동시 처리 가능(창 한도 내).
+    
+- **페이지 리스케일**: 큰 페이지 최대 3072×3072, 작은 페이지는 768×768로 스케일링.
+    
+- **토큰(문서)**: **페이지당 258 tokens**(개략).
+    
+
+```python
+from google import genai
+from google.genai import types
+import pathlib
+client = genai.Client()
+filepath = pathlib.Path('file.pdf')
+resp = client.models.generate_content(
+  model='gemini-2.5-flash',
+  contents=[
+    types.Part.from_bytes(data=filepath.read_bytes(), mime_type='application/pdf'),
+    'Summarize this document'
+  ]
+)
+print(resp.text)
+```
+
+**Files API 저장(예: 큰 PDF)**: 저장 48시간, 50MB 제한(문서 제공 기준). 다운로드는 API로 재접근.
+
+### Code Execution Tool (Python 전용)
+
+- **최대 런타임 ~30s**, 오류 시 최대 5회 재시도 가능.
+    
+- **I/O**: 텍스트/CSV 입력, Matplotlib 그래프를 inline 이미지로 반환.
+    
+
+```python
+from google import genai
+from google.genai import types
+client = genai.Client()
+resp = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=("Sum of first 50 primes. Generate & run code"),
+    config=types.GenerateContentConfig(
+        tools=[types.Tool(code_execution=types.ToolCodeExecution)]
+    ),
+)
+print(resp.text)
+```
+
+### Web Grounding (Google Search)
+
+- **실시간 검색**으로 최신 정보/인용 제공. `groundingMetadata`에 **검색 쿼리/출처/세그먼트-출처 매핑** 포함 → **인라인 인용** UI 구현 가능.
+    
+
+```python
+from google import genai
+from google.genai import types
+client = genai.Client()
+resp = client.models.generate_content(
+  model="gemini-2.5-flash",
+  contents="Who won the euro 2024?",
+  config=types.GenerateContentConfig(
+    tools=[types.Tool(google_search=types.GoogleSearch())]
+  ),
+)
+print(resp.text)
+```
+
+### URL Context
+
+- **URL 제공** 시 내부 인덱스 캐시 → 미존재 시 **라이브 fetch**. 가져온 콘텐츠는 **입력 토큰**에 포함.
+    
+- Grounding과 **병행 사용** 권장(검색→URL 정밀 분석).
+    
+
+### Video Understanding
+
+- **입력**: Files API(>20MB/긴 영상), inline(≤20MB), **YouTube URL(프리뷰/과금정책 변동 예정)**.
+    
+- **질의**: 요약/질문, **MM:SS 타임스탬프** 참조, **클리핑(start/end)**, **FPS 제어** 가능.
+    
+- **샘플링/토큰**: 기본 1FPS + 오디오 32t/s → **초당 ~300 tokens(기본 해상도)**, **low 해상도**는 초당 ~100 tokens.
+    
+- **기술 메모**: File API 저장 시 1FPS/오디오 1Kbps 단일채널, 초별 타임스탬프.
+    
+- **지원 포맷**: `video/mp4, video/mpeg, video/mov, video/avi, video/x-flv, video/mpg, video/webm, video/wmv, video/3gpp`
+    
+
+```python
+# Only for videos of size <20MB
+from google import genai
+from google.genai import types
+client = genai.Client()
+video_bytes = open('/path/to/video.mp4','rb').read()
+resp = client.models.generate_content(
+  model='gemini-2.5-flash',
+  contents=types.Content(parts=[
+    types.Part(inline_data=types.Blob(data=video_bytes, mime_type='video/mp4')),
+    types.Part(text='Please summarize the video in 3 sentences.')
+  ])
+)
+print(resp.text)
+```
+
+**YouTube URL (Preview)**: 공용/미설정 영상만, 2.5 이전 모델은 요청당 1개, 2.5 이후 최대 10개. 무료티어 일일 업로드 길이 제한(예: 8시간)이 존재.
+
+### Video Generation (Veo)
+
+- **Veo 3/3 Fast**: 8초, 24fps, 720p/1080p(16:9), **오디오 동시 생성**. 텍스트/이미지 → 비디오.
+    
+- 파라미터: `negativePrompt`, `aspectRatio(16:9/9:16)`, `resolution(720p/1080p)`, `seed` 등.
+    
+
+```python
+import time
+from google import genai
+from google.genai import types
+client = genai.Client()
+operation = client.models.generate_videos(
+  model="veo-3.0-generate-001",
+  prompt="A cinematic shot of a majestic lion in the savannah.",
+  config=types.GenerateVideosConfig(negative_prompt="cartoon, low quality"),
+)
+while not operation.done:
+    time.sleep(10)
+    operation = client.operations.get(operation)
+video = operation.response.generated_videos[0]
+client.files.download(file=video.video)
+video.video.save("lion.mp4")
+```
+
+---
+
+## API Features
+
+### Streaming
+
+- `generate_content_stream()`으로 청크 스트리밍 수신.
+    
+
+### Files API
+
+- 대용량/재사용 파일 업로드 → 핸들(FileRef)로 `contents`에 참조.
+    
+
+### Multi-turn (Chat)
+
+- SDK `chats.create()`를 통해 대화 히스토리 관리(실제 백엔드는 generateContent API 기반). 스트리밍 지원.
+    
+
+### Tools (함수형)
+
+- `google_search`, `url_context`, `code_execution`을 **도구**로 활성화 가능. 복합 워크플로우 구성.
+    
+
+---
+
+## Developer Tools
+
+### Token Counting
+
+- `count_tokens()`로 사전 토큰 산정(특히 오디오/문서/비디오 입력 시 유용).
+    
+
+### I/O & Limits (요약)
+
+- **Code Execution**: 런타임 30s, 오류 시 최대 5회 재시도, 텍스트/CSV/그래프 출력.
+    
+- **Documents**: 최대 1000p, 페이지당 258 tokens, 20MB↑ Files API 권장, 저장 48h.
+    
+- **Audio**: 초당 32 tokens, 최대 ~9.5h, 멀티채널은 1채널로 믹스, 16Kbps 등 다운샘플.
+    
+- **Images**: 768×768 타일(타일당 258 tokens), 최대 3600개 이미지/요청(모델/버전별), 회전/선명도 주의.
+    
+- **Video**: 기본 1FPS, 초당 ~300 tokens(기본 해상도), FPS/클리핑 조정 가능.
+    
+
+### Safety & Moderation
+
+- URL/이미지/비디오 업로드 시 안전성 점검. 차단 시 상태 코드 반환.
+    
+- 생성 이미지/비디오는 **SynthID 워터마크** 적용.
+    
+
+---
+
+## Pricing & Limits
+
+> **주의**: 가격/한도는 변경될 수 있습니다. 아래 수치는 제공 문서 기준 정리.
+
+### Gemini 2.5 Pro (예시)
+
+- **입력 가격(유료, 1M tokens당)**: $1.25 (≤200k), $2.50 (>200k)
+    
+- **출력 가격(사고 토큰 포함)**: $10.00 (≤200k), $15.00 (>200k)
+    
+- **컨텍스트 캐싱**: $0.31(≤200k), $0.625(>200k); 저장 $4.50/1M tokens/시간
+    
+- **무료 티어**: 일부 기능 제공
+    
+- **Used to improve products**: 무료 Yes, 유료 No (제공 문서 기준)
+    
+
+### Grounding with Google Search
+
+- **청구 단위**: 요청당 google_search 도구 사용 1회로 과금(내부 다중 검색 포함시에도 1회)
+    
+- **무료 할당 예시**: 1,500 RPD 이후 $35/1,000 requests (제공 문서 기준)
+    
+
+### Files API (문서)
+
+- 저장 48시간 / 50MB 한도(문서 기준).
+    
+
+### URL Context / Code Exec I/O
+
+- URL 컨텍스트로 가져온 콘텐츠는 **입력 토큰**으로 집계.
+    
+- Code Exec I/O는 **입력/출력/사고 토큰**으로 과금.
+    
+
+### Veo 3/3 Fast
+
+- 8초 비디오, 요청 대기/완료까지 폴링(11초~수분). 지역 제한/안전 필터/워터마크.
+    
+
+---
+
+## Best Practices
+
+### Prompt Design (Video/Veo)
+
+- **구성 요소**: Subject, Action, Style, Camera, Composition, Focus/Lens, Ambience.
+    
+- **오디오 프롬프트**: 대사(따옴표), SFX, Ambient를 명시.
+    
+- **Negative Prompt**: “no/don’t” 대신 **제외할 요소를 명사로 명시**.
+    
+- **Aspect Ratio**: 16:9(720p/1080p), 9:16(720p)
+    
+
+### Images
+
+- 회전/선명도 확인, 단일 이미지+텍스트 시 **이미지 먼저, 텍스트 나중**.
+    
+
+### Documents
+
+- 대용량/다수 PDF는 Files API 사용. Schema를 간결화(복잡하면 400 오류 가능).
+    
+
+### Structured Output
+
+- **propertyOrdering** 일치 유지(예제/스키마 순서 동일). 필수 필드 지정으로 일관성 향상.
+    
+
+### Video Understanding
+
+- 길거나 정적 강의는 **낮은 FPS(<1)**, 빠른 장면은 **FPS↑**. 텍스트는 비디오 뒤에 배치.
+    
+
+---
+
+## ai_api_module Integration Notes
+
+### 모델 별칭 & 자동갱신
+
+- `gemini-pro`, `gemini-flash`, `gemini-image`, `veo-3` 별칭을 **모델 레지스트리**로 최신 실명에 매핑.
+    
+
+### 파라미터 정규화
+
+- **reasoning_effort → thinking_budget**: `none→0`, `minimal/low/medium/high`는 내부 예산표로 맵핑.
+    
+- **max_tokens**: Google의 `max_output_tokens`에 매핑.
+    
+- **temperature**: 0.0~2.0 범위 클램프.
+    
+
+### 파일 경로/크기 정책
+
+- **≤20MB**: inline bytes, **>20MB 또는 재사용**: Files API.
+    
+
+### 도구 매핑
+
+- `google_search`(Grounding), `url_context`, `code_execution`을 **tools** 배열로 전달.
+    
+
+### 사용량/비용 집계
+
+- `usage_metadata`에서 prompt/candidate/tool_use 토큰 취합 → 가격표와 곱해 비용 추정.
+    
+
+---
+
+## Additional Resources
+
+- Gemini API 모델/스키마/도구 레퍼런스
+    
+- Veo 3 가이드(프롬프트 설계/오디오 큐)
+    
+- Files API 가이드(업로드/메타/보존)
+    
+- Grounding & URL Context 통합 예제

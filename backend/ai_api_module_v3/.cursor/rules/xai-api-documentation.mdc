@@ -1,0 +1,410 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# xAI Grok API Documentation
+
+## Table of Contents
+
+1. [Introduction](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#introduction)
+    
+2. [Models](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#models)
+    
+3. [Core Capabilities](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#core-capabilities)
+    
+4. [API Features](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#api-features)
+    
+5. [Developer Tools](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#developer-tools)
+    
+6. [Pricing & Limits](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#pricing--limits)
+    
+7. [ai_api_module Adapter Notes](https://chatgpt.com/c/68bffac5-8cc8-832c-89a8-50f2f0d31ed4#ai_api_module-adapter-notes)
+    
+
+---
+
+## Introduction
+
+### Quick Start (Python, xAI SDK)
+
+```python
+import os
+from xai_sdk import Client
+from xai_sdk.chat import user, system
+
+client = Client(api_key=os.getenv("XAI_API_KEY"))
+chat = client.chat.create(model="grok-4")
+chat.append(system("You are a helpful assistant."))
+chat.append(user("Summarize why the sky is blue in 2 lines."))
+resp = chat.sample()
+print(resp.content)
+```
+
+### Async (high‑throughput)
+
+```python
+import os, asyncio
+from xai_sdk import AsyncClient
+from xai_sdk.chat import user
+
+async def main():
+    client = AsyncClient(api_key=os.getenv("XAI_API_KEY"), timeout=3600)
+    prompts = ["Tell me a joke", "Haiku about time", "One-sentence startup idea"]
+    sem = asyncio.Semaphore(2)  # cap concurrency within your rate limits
+
+    async def run(p):
+        async with sem:
+            chat = client.chat.create(model="grok-4", max_tokens=200)
+            chat.append(user(p))
+            return await chat.sample()
+
+    results = await asyncio.gather(*[run(p) for p in prompts])
+    for r in results:
+        print(r.content)
+
+asyncio.run(main())
+```
+
+---
+
+## Models
+
+### Model Families
+
+#### Frontier / Reasoning Models (recommended for complex tasks)
+
+|Model|Modalities|Context|Highlights|Best For|
+|---|---|--:|---|---|
+|`grok-4` (latest alias resolves to current stable)|text (+vision input via Chat)|256k|Flagship reasoning; no `reasoning_effort`; disallows `presencePenalty`/`frequencyPenalty`/`stop`|Complex reasoning, math, multi‑step planning|
+|`grok-3`|text|131,072|Strong general model; higher RPM|General LLM tasks|
+|`grok-3-mini`|text|131,072|Cost‑efficient; good throughput|High‑volume assistants|
+|`grok-code-fast-1`|text, tools|256k|Fast reasoning for agentic coding; function calling & structured outputs|Code agents, tool use|
+
+#### Image Models
+
+|Model|Purpose|Notes|
+|---|---|---|
+|`grok-2-image-1212`|Image generation (JPG output)|Choose URL or base64 output; prompt is auto‑revised and returned as `revised_prompt`.|
+
+**Model aliasing**: `<model>` points to latest stable; `<model>-latest` to latest; `<model>-<date>` is pinned.
+
+---
+
+## Core Capabilities
+
+### 1) Chat (Text In → Text Out)
+
+- Stateless API: include prior turns yourself when you need context.
+    
+- Flexible role order: any sequence of `system` / `user` / `assistant` works.
+    
+
+**Basic**
+
+```python
+from xai_sdk import Client
+from xai_sdk.chat import user, system
+
+chat = Client().chat.create(model="grok-4")
+chat.append(system("You are a PhD-level mathematician."))
+chat.append(user("What is 2 + 2?"))
+print(chat.sample().content)
+```
+
+### 2) Reasoning
+
+- Reasoning‑only models: `grok-4`, `grok-3`, `grok-3-mini`, `grok-code-fast-1`.
+    
+- `grok-4`: **no** `reasoning_effort`; and it **does not** return `reasoning_content`.
+    
+- Other reasoning models can return `reasoning_content` (model’s thoughts) alongside final content.
+    
+- Reasoning tokens are billed as completion tokens.
+    
+
+**Example**
+
+```python
+from xai_sdk import Client
+from xai_sdk.chat import system, user
+
+chat = Client().chat.create(model="grok-4", messages=[system("You are a highly intelligent AI assistant.")])
+chat.append(user("What is 101*3?"))
+resp = chat.sample()
+print(resp.content)
+# For models that return it: print(resp.reasoning_content)
+print(resp.usage.completion_tokens, resp.usage.reasoning_tokens)
+```
+
+### 3) Image Understanding (Vision)
+
+- Send images by **URL** or **base64**; `detail` can be `auto` (default) | `low` | `high`.
+    
+- Limits: JPG/PNG, up to 20MiB each; any order with text.
+    
+- Image tokenization: each image is tiled (448×448). Tokens ≈ `(tiles + 1) * 256`, capped at 6 tiles per image.
+    
+
+**URL input**
+
+```python
+from xai_sdk import Client
+from xai_sdk.chat import user, image
+
+chat = Client().chat.create(model="grok-4")
+chat.append(user("What’s in this image?", image(image_url="https://.../photo.jpg", detail="high")))
+print(chat.sample().content)
+```
+
+**Base64 input**
+
+```python
+import base64
+from xai_sdk import Client
+from xai_sdk.chat import user, image
+
+b64 = base64.b64encode(open("local.jpg","rb").read()).decode()
+chat = Client().chat.create(model="grok-4")
+chat.append(user("Describe this.", image(image_url=f"data:image/jpeg;base64,{b64}", detail="high")))
+print(chat.sample().content)
+```
+
+### 4) Image Generation
+
+- Endpoint differs from chat: `/v1/images/generations`.
+    
+- Model: `grok-2-image-1212`.
+    
+- Output choice: URL or base64.
+    
+
+```python
+from xai_sdk import Client
+client = Client()
+img = client.image.sample(
+    model="grok-2-image-1212",
+    prompt="A cat in a tree",
+    image_format="url",  # or "base64"
+)
+print(img.url)            # or img.image (bytes when base64)
+print(img.prompt)         # revised_prompt returned
+```
+
+### 5) Live Search (grounded answers + citations)
+
+- Enable via `search_parameters` with `mode`: `off` | `auto` (default) | `on`.
+    
+- Sources: `web`, `x`, `news`, `rss` with per‑source filters (country, allow/deny websites, X handle filters, min favorites/views, RSS links…).
+    
+- Returns citations (URLs). You can set date ranges and max results.
+    
+
+```python
+from xai_sdk import Client
+from xai_sdk.chat import user
+from xai_sdk.search import SearchParameters, web_source
+
+chat = Client().chat.create(
+    model="grok-4",
+    search_parameters=SearchParameters(
+        mode="auto",
+        sources=[web_source(country="US")],
+        max_search_results=10,
+        # return_citations=True (default)
+    ),
+)
+chat.append(user("Give me a weekly tech news digest for early July 2025."))
+resp = chat.sample()
+print(resp.content)
+print(resp.citations)
+```
+
+### 6) Function Calling
+
+- Native function/tool calling with JSON schemas.
+    
+- Great for agents and code tools.
+    
+
+```python
+from xai_sdk import Client
+from xai_sdk.chat import user
+
+client = Client()
+chat = client.chat.create(model="grok-code-fast-1")
+# Define and register functions via SDK (see official guide), then:
+chat.append(user("Call `get_weather` for Seoul today in C"))
+print(chat.sample().content)
+```
+
+### 7) Structured Outputs (Type‑safe JSON)
+
+- Define schemas (Pydantic, etc.). Response is guaranteed to match.
+    
+
+```python
+from pydantic import BaseModel, Field
+from xai_sdk import Client
+from xai_sdk.chat import system, user
+
+class Todo(BaseModel):
+    title: str
+    done: bool = Field(description="Is it complete?")
+
+client = Client()
+chat = client.chat.create(model="grok-4")
+chat.append(system("Extract a TODO from text as JSON"))
+chat.append(user("Finish the monthly report by Friday."))
+response, todo = chat.parse(Todo)  # returns raw + parsed
+print(todo)
+```
+
+### 8) Streaming, Async & Deferred
+
+- **Streaming**: chunked tokens for responsive UIs.
+    
+- **Async**: send many requests concurrently (respect rate limits).
+    
+- **Deferred chat completions**: create → poll later via `/v1/chat/deferred-completion/{request_id}` (once within 24h).
+    
+
+---
+
+## API Features
+
+### Endpoints
+
+- **Chat**: `POST /v1/chat/completions` (reasoning chat, live search, function calling, structured outputs, streaming)
+    
+- **Images (gen)**: `POST /v1/images/generations`
+    
+- **Deferred chat**: `GET /v1/chat/deferred-completion/{request_id}`
+    
+
+### Conversations & Context
+
+- API is stateless; include prior turns manually.
+    
+- Role order is flexible; multiple `system` or `user` messages are allowed.
+    
+
+### Parameters (high‑value)
+
+- `max_tokens`: cap completion length.
+    
+- **Unsupported on reasoning models**: `presencePenalty`, `frequencyPenalty`, `stop` (will error). `grok-4` also rejects `reasoning_effort`.
+    
+- **Live Search**: `search_parameters = { mode, sources, from_date, to_date, max_search_results, return_citations }`.
+    
+
+---
+
+## Developer Tools
+
+- **xai_sdk** (Python): first‑class; also OpenAI‑compatible patterns for some routes.
+    
+- **Tokenizer & usage explorer**: estimate tokens and inspect usage.
+    
+- **Management**: billing, model availability, and rate limits via Console.
+    
+
+---
+
+## Pricing & Limits
+
+### Language Models (per 1M tokens)
+
+|Model|Context|Rate limits (approx)|Prompt|Completion|
+|---|--:|---|--:|--:|
+|`grok-code-fast-1`|256k|2M TPM / 480 RPM|$0.20|$1.50|
+|`grok-4-0709` (aka `grok-4`)|256k|2M TPM / 480 RPM|$3.00|$15.00|
+|`grok-3`|131,072|– / 600 RPM|$3.00|$15.00|
+|`grok-3-mini`|131,072|– / 480 RPM|$0.30|$0.50|
+
+### Image Generation (per image)
+
+- `grok-2-image-1212`: **$0.07** / image.
+    
+
+### Live Search
+
+- **$25 per 1,000 sources** (=$0.025/source). Citations and `usage.num_sources_used` provided.
+    
+
+### Vision (inputs)
+
+- JPG/PNG up to **20MiB**/image; tokens per image ≈ `(tiles + 1) * 256`, max 6 tiles.
+    
+
+### Knowledge Cutoff
+
+- Grok‑3 / Grok‑4: **Nov 2024**.
+    
+
+### Other Notes
+
+- No batch API (use Async client & deferred completions).
+    
+- Reasoning tokens billed at completion‑token rates.
+    
+
+---
+
+## ai_api_module Adapter Notes
+
+Goal: expose a **uniform interface** across providers.
+
+### Parameter Normalization
+
+- **max_tokens / max_completion_tokens** → map to xAI `max_tokens`.
+    
+- **temperature** → supported normally on chat completion.
+    
+- **reasoning_effort** → **do not set** for `grok-4` (error). If your module exposes it, gate by model and fallback to sensible defaults.
+    
+- **presence/frequency penalties & stop** → not supported on reasoning models; guard and omit.
+    
+
+### Model Routing
+
+- Text/chat: default to `grok-4` for heavy reasoning; use `grok-code-fast-1` for fast agentic coding; `grok-3-mini` for cost‑sensitive workloads.
+    
+- Vision understanding: call chat with image parts (URL or base64) on `grok-4`.
+    
+- Image generation: route to `grok-2-image-1212` and support `url` vs `base64` outputs.
+    
+- Maintain an **alias map** to always point `grok-4` → latest stable; allow pinning to dated IDs.
+    
+
+### Live Search Abstraction
+
+- Expose a provider‑agnostic `grounded_search` option with: `mode`, `sources`, `date_range`, `max_results`, and `citations`.
+    
+- Map to xAI `search_parameters` and return `citations` and `num_sources_used`.
+    
+
+### Files & Uploads
+
+- Images: support base64 and public URLs; enforce 20MiB/image.
+    
+- (No dedicated Files API for images needed; images are passed inline/URL in chat; image generation returns URL or bytes.)
+    
+
+### Async & Deferred
+
+- Provide a module‑level async runner with a concurrency semaphore.
+    
+- Offer a `deferred` flag to return a `request_id` and a helper to poll `/chat/deferred-completion/{id}`.
+    
+
+### Cost Awareness
+
+- Surface per‑model pricing in metadata for planner/optimizer.
+    
+- Track `usage` fields including `reasoning_tokens`, `prompt_image_tokens`, and Live Search `num_sources_used`.
+    
+
+### Import UX
+
+- Package your module so users can always `import ai_api_module` regardless of project layout (e.g., via PEP 420 namespace package or installable wheel with clear entrypoints).

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CSAT VOCABULARY 600</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* =================================================================== */
+        /* 1. DESIGN TOKENS & SETUP */
+        /* =================================================================== */
+        :root {
+            /* Color Palette (Friendly & Educational) */
+            --bg: #FFFFFF;
+            --ink: #1F2937;
+            --muted: #667085;
+            --line: #E5E7EB;
+            --accent: #1AA5A5; /* Teal */
+            --accent-weak: #F0FAFA;
+
+            /* Typography */
+            --font-ko: 'Noto Sans KR', sans-serif;
+            --font-en: 'Inter', sans-serif;
+            --fs-body: 10pt;
+            --fs-small: 8.5pt;
+            --lh-body: 1.6;
+
+            /* Layout */
+            --page-margin-top: 20mm;
+            --page-margin-right: 18mm;
+            --page-margin-bottom: 20mm;
+            --page-margin-left: 18mm;
+        }
+
+        /* =================================================================== */
+        /* 2. A4 PRINT & BASE STYLES */
+        /* =================================================================== */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            background: #EAEAEA;
+            font-family: var(--font-ko);
+            font-size: var(--fs-body);
+            line-height: var(--lh-body);
+            color: var(--ink);
+            counter-reset: page;
+        }
+
+        /* =================================================================== */
+        /* 3. PAGE STRUCTURE */
+        /* =================================================================== */
+        .page {
+            width: 210mm;
+            height: 297mm;
+            padding: var(--page-margin-top) var(--page-margin-right) var(--page-margin-bottom) var(--page-margin-left);
+            margin: 10mm auto;
+            background: var(--bg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            page-break-after: always;
+            overflow: hidden;
+        }
+
+        .page:last-child {
+            page-break-after: avoid;
+        }
+
+        .page-content {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .page-header, .page-footer {
+            width: calc(210mm - var(--page-margin-left) - var(--page-margin-right));
+            position: absolute;
+            left: var(--page-margin-left);
+            flex-shrink: 0;
+            font-family: var(--font-en);
+            font-size: 8pt;
+            color: var(--muted);
+        }
+
+        .page-header {
+            top: 0;
+            padding-top: 12mm;
+            padding-bottom: 4mm;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .page-footer {
+            bottom: 0;
+            padding-bottom: 12mm;
+            padding-top: 4mm;
+            text-align: center;
+            border-top: 1px solid var(--line);
+        }
+        
+        .page-footer::after {
+            counter-increment: page;
+            content: counter(page);
+        }
+
+        .no-header-footer .page-header,
+        .no-header-footer .page-footer {
+            display: none;
+        }
+
+        @media print {
+            body { background: white; }
+            .page { margin: 0; box-shadow: none; }
+        }
+
+        /* =================================================================== */
+        /* 4. COVER PAGE */
+        /* =================================================================== */
+        .page.cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .cover-title {
+            font-family: var(--font-en);
+            font-size: 36pt;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -1px;
+            margin: 0;
+        }
+
+        .cover-subtitle {
+            font-size: 14pt;
+            font-weight: 400;
+            color: var(--muted);
+            margin-top: 4mm;
+        }
+
+        .cover-bar {
+            width: 80px;
+            height: 4px;
+            background-color: var(--accent);
+            margin: 12mm 0;
+        }
+
+        /* =================================================================== */
+        /* 5. VOCABULARY LIST */
+        /* =================================================================== */
+        .vocab-list {
+            padding-top: 15mm; /* Space from header */
+            height: 100%;
+        }
+
+        .two-column {
+            column-count: 2;
+            column-gap: 10mm;
+            column-fill: auto;
+            height: calc(297mm - var(--page-margin-top) - var(--page-margin-bottom) - 30mm); /* Full content height */
+        }
+        
+        .vocab-item {
+            padding: 4mm 0;
+            border-bottom: 1px solid var(--line);
+            break-inside: avoid;
+        }
+
+        .vocab-item:first-child {
+            padding-top: 0;
+        }
+
+        .vocab-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .vocab-number {
+            font-family: var(--font-en);
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--accent);
+            min-width: 24px;
+        }
+
+        .vocab-word {
+            font-family: var(--font-en);
+            font-size: 14pt;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .vocab-meta {
+            margin-left: calc(24px + 8px);
+            font-size: var(--fs-small);
+            color: var(--muted);
+            line-height: 1.4;
+        }
+        
+        .vocab-meta .pos {
+            font-family: var(--font-en);
+            font-weight: 500;
+            margin-right: 6px;
+        }
+
+        .vocab-meaning {
+            margin: 2mm 0 2mm calc(24px + 8px);
+            font-weight: 500;
+            color: #333;
+        }
+
+        .vocab-example {
+            margin-left: calc(24px + 8px);
+            font-size: var(--fs-small);
+            font-style: italic;
+            color: var(--muted);
+            background-color: var(--accent-weak);
+            padding: 1.5mm 3mm;
+            border-radius: 4px;
+            display: inline-block;
+            width: calc(100% - 24px - 8px);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Cover Page -->
+    <div class="page cover no-header-footer">
+        <h1 class="cover-title">CSAT VOCABULARY 600</h1>
+        <div class="cover-bar"></div>
+        <p class="cover-subtitle">수능 기출 필수 어휘</p>
+    </div>
+
+    <!-- Vocabulary Page 1 -->
+    <div class="page">
+        <header class="page-header">
+            <span>CSAT VOCABULARY 600</span>
+            <span>DAY 01</span>
+        </header>
+        <main class="page-content">
+            <div class="vocab-list two-column">
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">1</span><span class="vocab-word">gather</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [gæðər]</div>
+                    <div class="vocab-meaning">모으다, 얻다</div>
+                    <div class="vocab-example">(2011) gather up her courage 그녀의 용기를 모으다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">2</span><span class="vocab-word">material</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [mətíəriəl]</div>
+                    <div class="vocab-meaning">물질, 자재, 자료</div>
+                    <div class="vocab-example">(2001) proper building materials 적절한 건축 자재</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">3</span><span class="vocab-word">prescription</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [priskríp∫ən]</div>
+                    <div class="vocab-meaning">처방, 처방전</div>
+                    <div class="vocab-example">(2006) write a prescription 처방전을 쓰다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">4</span><span class="vocab-word">assign</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [əsáin]</div>
+                    <div class="vocab-meaning">할당하다, 배정하다</div>
+                    <div class="vocab-example">(2011) be assigned a personal adviser 개인 강사를 할당받다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">5</span><span class="vocab-word">skip</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [skıp]</div>
+                    <div class="vocab-meaning">거르다, 건너뛰다</div>
+                    <div class="vocab-example">(2015) make him skip the day 그가 그 날을 거르게 하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">6</span><span class="vocab-word">loneliness</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [lóunlines]</div>
+                    <div class="vocab-meaning">외로움</div>
+                    <div class="vocab-example">(2003) feelings of longing and loneliness 그리움과 외로움</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">7</span><span class="vocab-word">knowledgeable</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [nálidzəbəl]</div>
+                    <div class="vocab-meaning">지식이 있는, 아는 것이 많은</div>
+                    <div class="vocab-example">(1999) knowledgeable people 지식이 있는 사람들</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">8</span><span class="vocab-word">fundamental</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [fʌ̀ndəméntl]</div>
+                    <div class="vocab-meaning">근본적인, 핵심적인</div>
+                    <div class="vocab-example">(2015) fundamental nature of causality 근본적인 인과 관계의 특징</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">9</span><span class="vocab-word">force</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [fɔːrs]</div>
+                    <div class="vocab-meaning">힘, 세력</div>
+                    <div class="vocab-example">(2002) opposing forces 대립하는 힘</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">10</span><span class="vocab-word">up to~</span></div>
+                    <div class="vocab-meta"></div>
+                    <div class="vocab-meaning">~에 달려있는, ~까지</div>
+                    <div class="vocab-example">(2012) the choice is up to you 선택은 당신에게 달려 있다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">11</span><span class="vocab-word">regular</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [régjələr]</div>
+                    <div class="vocab-meaning">정규의, 정식의, 규칙적인</div>
+                    <div class="vocab-example">(2002) their regular jobs 그들의 정규적인 직업</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">12</span><span class="vocab-word">attract</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [ətrǽkt]</div>
+                    <div class="vocab-meaning">끌어당기다, 유인하다</div>
+                    <div class="vocab-example">(2009) attract insects 곤충을 유인하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">13</span><span class="vocab-word">irrelevant</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [iréləvənt]</div>
+                    <div class="vocab-meaning">부적절한, 무관계한</div>
+                    <div class="vocab-example">(2009) irrelevant data 관련 없는 자료</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">14</span><span class="vocab-word">include</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [inklúːd]</div>
+                    <div class="vocab-meaning">포함하다</div>
+                    <div class="vocab-example">(2015) include smell, touch, and hearing 후각, 촉각, 청각을 포함하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">15</span><span class="vocab-word">firm</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [fəːrm]</div>
+                    <div class="vocab-meaning">굳은, 확고한</div>
+                    <div class="vocab-example">(2003) firm determination 확고한 결심</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">16</span><span class="vocab-word">ecological</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [ìːkəlɑ́dƷikəl]</div>
+                    <div class="vocab-meaning">생태학의</div>
+                    <div class="vocab-example">(2010) ecological diversity 생태학적 다양성</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">17</span><span class="vocab-word">solution</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [səlúːʃən]</div>
+                    <div class="vocab-meaning">해결, 해결책</div>
+                    <div class="vocab-example">(2001) a very simple solution 매우 간단한 해결책</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">18</span><span class="vocab-word">still</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [stil]</div>
+                    <div class="vocab-meaning">정지한, 조용한</div>
+                    <div class="vocab-example">(2002) still waters 잔잔한 물들</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">19</span><span class="vocab-word">responsibility</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [rispὰnsəbíləti]</div>
+                    <div class="vocab-meaning">책임, 의무</div>
+                    <div class="vocab-example">(1994) take responsibility 책임지다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">20</span><span class="vocab-word">comprehension</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [kὰmprihénʃən]</div>
+                    <div class="vocab-meaning">이해, 이해력</div>
+                    <div class="vocab-example">(2009) factual comprehension 사실 이해</div>
+                </div>
+            </div>
+        </main>
+        <footer class="page-footer"></footer>
+    </div>
+
+    <!-- Vocabulary Page 2 -->
+    <div class="page">
+        <header class="page-header">
+            <span>CSAT VOCABULARY 600</span>
+            <span>DAY 02</span>
+        </header>
+        <main class="page-content">
+            <div class="vocab-list two-column">
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">21</span><span class="vocab-word">reconciliation</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [rèkənsìliéiʃən]</div>
+                    <div class="vocab-meaning">조정, 화해</div>
+                    <div class="vocab-example">(2009) a spirit of reconciliation 화해 정신</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">22</span><span class="vocab-word">resume</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [rizúːm]</div>
+                    <div class="vocab-meaning">다시 시작하다</div>
+                    <div class="vocab-example">(2010) resume delivery 배달을 다시 시작하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">23</span><span class="vocab-word">assemble</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [əsémbəl]</div>
+                    <div class="vocab-meaning">모으다, 집합시키다</div>
+                    <div class="vocab-example">(2010) assemble groups of students 학생 무리들을 모으다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">24</span><span class="vocab-word">abundance</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [əbʌ́ndəns]</div>
+                    <div class="vocab-meaning">풍부, 많음</div>
+                    <div class="vocab-example">(2009) an abundance of resources 자원의 풍부함</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">25</span><span class="vocab-word">compensate</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [kɑ́ːmpənsèit]</div>
+                    <div class="vocab-meaning">보상하다</div>
+                    <div class="vocab-example">(2015) compensate for this rather obvious defect 이러한 오히려 명백한 결점을 보상하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">26</span><span class="vocab-word">suburb</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [sʌ́bǝːrb]</div>
+                    <div class="vocab-meaning">교외, 근교</div>
+                    <div class="vocab-example">(2012) a block of homes in the suburbs 교외 부근 집들의 블록</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">27</span><span class="vocab-word">pierce</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [piərs]</div>
+                    <div class="vocab-meaning">꿰뚫다, 관통하다</div>
+                    <div class="vocab-example">(2013) pierce their membranes 그것들의 세포막을 뚫다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">28</span><span class="vocab-word">anatomy</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [ənǽtəmi]</div>
+                    <div class="vocab-meaning">해부학, 해부</div>
+                    <div class="vocab-example">(2010) the anatomy of a frog 개구리의 해부</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">29</span><span class="vocab-word">sabotage</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [sǽbətὰːƷ]</div>
+                    <div class="vocab-meaning">고의로 방해하다</div>
+                    <div class="vocab-example">(2012) sabotage academic performance 학업을 방해하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">30</span><span class="vocab-word">ambiguity</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [æmbígjuːəti]</div>
+                    <div class="vocab-meaning">모호성</div>
+                    <div class="vocab-example">(2016) without any distortion or ambiguity 어떤 왜곡 또는 모호성 없이</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">31</span><span class="vocab-word">population</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [pὰpjuléiʃən]</div>
+                    <div class="vocab-meaning">인구, 주민</div>
+                    <div class="vocab-example">(2015) the local human population 지역의 인구</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">32</span><span class="vocab-word">probability</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [prὰbəbíləti]</div>
+                    <div class="vocab-meaning">있음직함, 확률</div>
+                    <div class="vocab-example">(2012) a high probability of selling 팔릴 가능성이 아주 높음</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">33</span><span class="vocab-word">descent</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [disént]</div>
+                    <div class="vocab-meaning">하강, 가계, 혈통</div>
+                    <div class="vocab-example">(2012) East African descent 동아프리카계 혈통</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">34</span><span class="vocab-word">contend</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [kənténd]</div>
+                    <div class="vocab-meaning">논쟁하다, 주장하다</div>
+                    <div class="vocab-example">(1994) contend with differences 차이점에 대해 논쟁하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">35</span><span class="vocab-word">insightful</span></div>
+                    <div class="vocab-meta"><span class="pos">adj.</span> [ínsàitfəl]</div>
+                    <div class="vocab-meaning">통찰력이 있는</div>
+                    <div class="vocab-example">(2011) receive insightful suggestions 통찰력 있는 조언을 얻다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">36</span><span class="vocab-word">entail</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [intéil]</div>
+                    <div class="vocab-meaning">일으키다, 수반하다</div>
+                    <div class="vocab-example">(2012) what perception entails 인식이 수반하는 것</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">37</span><span class="vocab-word">involve</span></div>
+                    <div class="vocab-meta"><span class="pos">v.</span> [invɑ́ːlv]</div>
+                    <div class="vocab-meaning">포함하다, 관련시키다</div>
+                    <div class="vocab-example">(2016) involve interpretation 해석을 포함하다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">38</span><span class="vocab-word">manipulation</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [mənìpjuléiʃən]</div>
+                    <div class="vocab-meaning">조작, 속임</div>
+                    <div class="vocab-example">(2010) carry out a successful manipulation 성공적으로 속임수를 걸다</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">39</span><span class="vocab-word">heritage</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [héritidƷ]</div>
+                    <div class="vocab-meaning">상속 재산, 유산</div>
+                    <div class="vocab-example">(2010) the heritage of his culture 그의 문화의 유산</div>
+                </div>
+                <div class="vocab-item">
+                    <div class="vocab-header"><span class="vocab-number">40</span><span class="vocab-word">intent</span></div>
+                    <div class="vocab-meta"><span class="pos">n.</span> [intént]</div>
+                    <div class="vocab-meaning">의향, 목적, 의도</div>
+                    <div class="vocab-example">(2005) artist's original intent 예술가의 원래 의도</div>
+                </div>
+            </div>
+        </main>
+        <footer class="page-footer"></footer>
+    </div>
+</body>
+</html>

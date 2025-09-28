@@ -1,0 +1,731 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# AI API Module - Complete Documentation
+
+## Table of Contents
+
+1. [Quick Start](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#quick-start)
+2. [Installation](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#installation)
+3. [Core Components](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#core-components)
+4. [API Reference](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#api-reference)
+5. [Advanced Features](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#advanced-features)
+6. [Provider Specifics](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#provider-specifics)
+7. [Cost Management](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#cost-management)
+8. [Best Practices](https://claude.ai/chat/d71fa92f-5691-492d-b320-b4f54befc08e#best-practices)
+
+## Quick Start
+
+### 30-Second Setup
+
+```bash
+# Clone and install
+git clone https://github.com/your-org/ai-api-module
+cd ai-api-module
+pip install -e .
+
+# Set API keys
+export OPENAI_API_KEY="your-key"
+export ANTHROPIC_API_KEY="your-key"
+export GOOGLE_API_KEY="your-key" 
+export XAI_API_KEY="your-key"
+```
+
+### First AI Call
+
+```python
+from ai_api_module import AI
+
+ai = AI()
+
+# Text generation
+response = ai.chat("Write a haiku about coding")
+print(response.text)
+
+# With images
+response = ai.chat(
+    "What's in this image?", 
+    image="path/to/image.jpg",
+    model="claude"
+)
+
+# Generate images
+image = ai.generate_image("A cat coding Python")
+image.save("cat_coding.png")
+```
+
+## Installation
+
+### Method 1: Git Clone (Recommended for Development)
+
+```bash
+git clone https://github.com/your-org/ai-api-module
+cd ai-api-module
+pip install -e ".[all]"  # Install with all providers
+```
+
+### Method 2: Package Installation
+
+```bash
+pip install ai-api-module[all]  # All providers
+pip install ai-api-module[openai,anthropic]  # Specific providers
+```
+
+### Environment Variables
+
+```bash
+# Required: At least one provider
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GOOGLE_API_KEY="..."
+export XAI_API_KEY="xai-..."
+
+# Optional: Configuration
+export AI_DEFAULT_PROVIDER="openai"  # Default: auto-detect best available
+export AI_DEFAULT_MODEL="smart"     # Default: smart (automatically selects best model)
+export AI_BUDGET_LIMIT="10.0"       # Daily budget in USD
+export AI_LOG_LEVEL="INFO"          # DEBUG, INFO, WARNING, ERROR
+export AI_CACHE_DIR="~/.ai_cache"   # Cache directory
+```
+
+## Core Components
+
+### 1. AI Class - Main Interface
+
+```python
+from ai_api_module import AI
+
+# Initialize with auto-detection
+ai = AI()
+
+# Initialize with specific provider
+ai = AI(provider="openai")
+ai = AI(provider="anthropic") 
+ai = AI(provider="google")
+ai = AI(provider="xai")
+
+# Initialize with custom config
+ai = AI(
+    provider="openai",
+    budget_limit=5.0,
+    temperature=0.7,
+    default_model="smart"
+)
+```
+
+### 2. Model Selection System
+
+#### Automatic Model Selection
+
+```python
+ai = AI()
+
+# Smart routing - automatically picks best model for task
+response = ai.chat("Complex reasoning task")  # → GPT-5 or Claude Opus
+response = ai.chat("Simple question")         # → GPT-4.1-mini or Claude Haiku
+
+# Task-specific routing
+response = ai.chat("Generate code", task="coding")      # → Best coding model
+response = ai.chat("Creative story", task="creative")   # → Best creative model
+response = ai.chat("Analyze data", task="analysis")     # → Best analysis model
+```
+
+#### Manual Model Selection
+
+```python
+# Provider aliases (automatically updated)
+ai.chat("Hello", model="gpt")           # → Latest GPT model
+ai.chat("Hello", model="claude")        # → Latest Claude model  
+ai.chat("Hello", model="gemini")        # → Latest Gemini model
+ai.chat("Hello", model="grok")          # → Latest Grok model
+
+# Specific models
+ai.chat("Hello", model="gpt-5")
+ai.chat("Hello", model="claude-opus-4")
+ai.chat("Hello", model="gemini-2.5-pro")
+ai.chat("Hello", model="grok-4")
+
+# Model capabilities
+ai.chat("Hello", model="smart")         # Best reasoning model
+ai.chat("Hello", model="fast")          # Fastest model
+ai.chat("Hello", model="cheap")         # Most cost-effective
+ai.chat("Hello", model="creative")      # Best for creative tasks
+```
+
+### 3. Unified Response Object
+
+```python
+class AIResponse:
+    """Unified response object across all providers"""
+    
+    # Core content
+    text: str                           # Generated text
+    images: List[Image]                 # Generated/processed images
+    tool_calls: List[ToolCall]         # Function calls made
+    
+    # Metadata
+    model: str                         # Actual model used
+    provider: str                      # Provider used
+    usage: Usage                       # Token/cost information
+    reasoning: Optional[str]           # Reasoning steps (if available)
+    
+    # Context management
+    conversation_id: str               # For context continuation
+    message_id: str                    # Unique message identifier
+    
+    # Quality metrics
+    confidence: float                  # Model confidence (0-1)
+    safety_flags: List[str]           # Safety warnings
+    
+    # Cost tracking
+    cost: float                       # Estimated cost in USD
+    tokens_used: int                  # Total tokens consumed
+```
+
+## API Reference
+
+### Text Generation
+
+#### Basic Chat
+
+```python
+# Simple text generation
+response = ai.chat("Explain machine learning")
+
+# With system prompt
+response = ai.chat(
+    "Write a formal email",
+    system="You are a professional business writer"
+)
+
+# With conversation history
+conversation = ai.start_conversation()
+conversation.add_message("What is Python?")
+response1 = conversation.send()
+
+conversation.add_message("Give me a code example")
+response2 = conversation.send()
+```
+
+#### Advanced Parameters
+
+```python
+response = ai.chat(
+    message="Complex reasoning problem",
+    model="smart",                    # Model selection
+    temperature=0.7,                  # Creativity (0-2)
+    max_tokens=1000,                  # Output length limit
+    reasoning_effort="high",          # For reasoning models
+    tools=["web_search", "calculator"], # Available tools
+    format="json",                    # Output format
+    stream=True                       # Streaming response
+)
+```
+
+### Image Capabilities
+
+#### Image Generation
+
+```python
+# Basic generation
+image = ai.generate_image("A sunset over mountains")
+
+# Advanced generation
+image = ai.generate_image(
+    prompt="A futuristic city at night",
+    style="photorealistic",          # artistic, photorealistic, cartoon
+    size="1024x1024",               # Various sizes supported
+    quality="high",                  # low, medium, high
+    provider="openai"               # Force specific provider
+)
+
+# Save image
+image.save("city.png")
+image.save("city.jpg", quality=95)
+```
+
+#### Image Analysis
+
+```python
+# Analyze local image
+response = ai.analyze_image("path/to/image.jpg", "What's in this image?")
+
+# Analyze with URL
+response = ai.analyze_image(
+    "https://example.com/image.jpg",
+    "Describe the emotions on the person's face"
+)
+
+# Multi-image analysis
+response = ai.analyze_images(
+    ["image1.jpg", "image2.jpg"],
+    "Compare these two images"
+)
+```
+
+#### Image Editing
+
+```python
+# Edit with prompt
+edited = ai.edit_image(
+    "original.jpg",
+    "Add a rainbow in the sky",
+    mask="sky_mask.png"  # Optional mask
+)
+
+# Background removal
+no_bg = ai.remove_background("person.jpg")
+
+# Style transfer
+stylized = ai.style_transfer("photo.jpg", "van_gogh_style.jpg")
+```
+
+### File Processing
+
+#### Document Analysis
+
+```python
+# PDF processing
+response = ai.analyze_document(
+    "research_paper.pdf",
+    "Summarize the key findings"
+)
+
+# Multiple documents
+response = ai.analyze_documents(
+    ["doc1.pdf", "doc2.docx", "doc3.txt"],
+    "Find common themes across these documents"
+)
+```
+
+#### Audio Processing
+
+```python
+# Speech to text
+text = ai.transcribe_audio("meeting.mp3")
+
+# Text to speech
+audio = ai.generate_speech(
+    "Hello, this is a test",
+    voice="natural",               # natural, professional, casual
+    speed=1.0,                    # 0.5-2.0
+    output_format="mp3"           # mp3, wav, ogg
+)
+audio.save("output.mp3")
+```
+
+### Advanced Features
+
+#### Web Search Integration
+
+```python
+# Simple web search
+response = ai.chat(
+    "What are the latest developments in AI?",
+    web_search=True
+)
+
+# Advanced search
+response = ai.web_search(
+    query="climate change research 2024",
+    sources=["academic", "news"],     # academic, news, general
+    max_results=10,
+    date_range="last_month"
+)
+```
+
+#### Function Calling / Tools
+
+```python
+# Define custom tools
+@ai.tool
+def get_weather(location: str, unit: str = "celsius") -> dict:
+    """Get weather information for a location"""
+    # Your implementation
+    return {"temperature": 22, "condition": "sunny"}
+
+@ai.tool  
+def calculate(expression: str) -> float:
+    """Safely evaluate mathematical expressions"""
+    # Your implementation
+    return eval(expression)  # (Use safe eval in practice)
+
+# Use tools in conversation
+response = ai.chat(
+    "What's the weather in Seoul and calculate 15% of 240?",
+    tools=[get_weather, calculate]
+)
+```
+
+#### Async Operations
+
+```python
+import asyncio
+
+async def main():
+    ai = AI()
+    
+    # Single async request
+    response = await ai.async_chat("Hello world")
+    
+    # Batch processing
+    prompts = ["Question 1", "Question 2", "Question 3"]
+    responses = await ai.batch_chat(prompts, model="fast")
+    
+    # Concurrent with different models
+    tasks = [
+        ai.async_chat("Creative task", model="creative"),
+        ai.async_chat("Technical task", model="smart"),
+        ai.async_chat("Simple task", model="fast")
+    ]
+    results = await asyncio.gather(*tasks)
+
+asyncio.run(main())
+```
+
+#### Streaming Responses
+
+```python
+# Stream text generation
+for chunk in ai.stream_chat("Tell me a long story"):
+    print(chunk.text, end="", flush=True)
+
+# Stream with callbacks
+def on_chunk(chunk):
+    print(f"Received: {chunk.text}")
+    
+def on_complete(response):
+    print(f"\nTotal cost: ${response.cost:.4f}")
+
+ai.stream_chat(
+    "Explain quantum physics",
+    on_chunk=on_chunk,
+    on_complete=on_complete
+)
+```
+
+### Context Management
+
+#### Conversations
+
+```python
+# Start persistent conversation
+conversation = ai.start_conversation(
+    name="Project Discussion",
+    system="You are a helpful project manager"
+)
+
+# Add messages and get responses
+conversation.add_user_message("What are the project priorities?")
+response1 = conversation.send()
+
+conversation.add_user_message("How should we handle the timeline?")
+response2 = conversation.send()
+
+# Switch models mid-conversation
+conversation.switch_model("claude")
+response3 = conversation.send("Now think about this creatively")
+
+# Save and load conversations
+conversation.save("project_chat.json")
+loaded_conv = ai.load_conversation("project_chat.json")
+```
+
+#### Memory and Context
+
+```python
+# Long-term memory
+ai.memory.add_fact("user_preference", "Prefers concise explanations")
+ai.memory.add_fact("project_context", "Working on a Python web app")
+
+# Context-aware responses
+response = ai.chat(
+    "How should I structure my project?",
+    use_memory=True  # Will consider saved facts
+)
+
+# Summarization for long contexts
+ai.auto_summarize = True  # Automatically summarize long conversations
+max_context_tokens = 8000  # Auto-summarize when context exceeds this
+```
+
+## Provider Specifics
+
+### OpenAI Integration
+
+```python
+# OpenAI-specific features
+response = ai.chat(
+    "Generate code",
+    provider="openai",
+    openai_config={
+        "response_format": {"type": "json_object"},
+        "seed": 123,  # For reproducible outputs
+        "user": "user_123"  # For abuse monitoring
+    }
+)
+
+# Function calling (OpenAI style)
+response = ai.chat(
+    message="Get weather for NYC",
+    provider="openai", 
+    tools=[weather_tool],
+    tool_choice="auto"  # auto, none, or specific tool
+)
+```
+
+### Anthropic Integration
+
+```python
+# Claude-specific features
+response = ai.chat(
+    "Analyze this data",
+    provider="anthropic",
+    anthropic_config={
+        "prefill": "I'll analyze this step by step:\n1.",  # Prefill assistant response
+        "stop_sequences": ["\n\nHuman:", "END"],
+    }
+)
+
+# Vision with Claude
+response = ai.analyze_image(
+    "document.jpg",
+    "Extract all text and data from this document",
+    provider="anthropic",
+    detail_level="high"  # For complex documents
+)
+```
+
+### Google Integration
+
+```python
+# Gemini-specific features  
+response = ai.chat(
+    "Help me code",
+    provider="google",
+    google_config={
+        "thinking_config": {"thinking_budget": 1000},  # For reasoning
+        "safety_settings": {
+            "harassment": "block_low_and_above"
+        }
+    }
+)
+
+# Multi-modal with Gemini
+response = ai.chat(
+    "Analyze this video and audio",
+    files=["video.mp4", "audio.mp3"],
+    provider="google"
+)
+```
+
+### xAI Integration
+
+```python
+# Grok-specific features
+response = ai.chat(
+    "What's happening in tech news?",
+    provider="xai",
+    xai_config={
+        "search_parameters": {
+            "mode": "auto",
+            "sources": ["web", "x", "news"],
+            "max_search_results": 10
+        }
+    }
+)
+
+# Real-time information
+response = ai.chat(
+    "Latest developments in AI research",
+    provider="xai",
+    live_search=True
+)
+```
+
+## Cost Management
+
+### Budget Controls
+
+```python
+# Set budget limits
+ai.set_budget_limit(daily=10.0, monthly=100.0)  # USD
+
+# Cost estimation before execution
+estimate = ai.estimate_cost("Long prompt here...", model="gpt-5")
+print(f"Estimated cost: ${estimate:.4f}")
+
+if estimate < 0.10:  # Only proceed if under 10 cents
+    response = ai.chat("Long prompt here...", model="gpt-5")
+```
+
+### Usage Tracking
+
+```python
+# Get usage statistics
+usage = ai.get_usage_stats()
+print(f"""
+Daily usage: ${usage.daily_cost:.2f}
+Monthly usage: ${usage.monthly_cost:.2f}  
+Total requests: {usage.total_requests}
+Most used model: {usage.most_used_model}
+""")
+
+# Per-conversation tracking
+conversation = ai.start_conversation()
+conversation.track_costs = True
+
+response = conversation.send("Hello")
+print(f"Conversation cost so far: ${conversation.total_cost:.4f}")
+```
+
+### Cost Optimization
+
+```python
+# Automatic cost optimization
+ai.enable_cost_optimization(
+    prefer_cheaper_models=True,      # Use cheaper models when possible
+    aggressive_caching=True,         # Cache similar requests
+    token_budgets=True,             # Automatically limit tokens
+    smart_routing=True              # Route to most cost-effective provider
+)
+
+# Model selection by budget
+response = ai.chat(
+    "Answer this question",
+    max_cost=0.01,  # Will select cheapest capable model
+    quality_threshold=0.8  # Minimum quality requirement (0-1)
+)
+```
+
+## Best Practices
+
+### Performance Optimization
+
+```python
+# Connection pooling and session reuse
+ai = AI(
+    connection_pool_size=10,
+    session_reuse=True,
+    request_timeout=30
+)
+
+# Batch similar requests
+prompts = ["Question 1", "Question 2", "Question 3"]
+responses = ai.batch_chat(
+    prompts,
+    model="fast",
+    max_concurrent=5  # Limit concurrent requests
+)
+
+# Caching for repeated queries
+ai.enable_cache(
+    cache_duration=3600,  # 1 hour
+    cache_size=1000       # Max cached responses
+)
+```
+
+### Error Handling
+
+```python
+from ai_api_module.exceptions import (
+    AIProviderError,
+    RateLimitError, 
+    BudgetExceededError,
+    ModelNotAvailableError
+)
+
+try:
+    response = ai.chat("Hello world")
+except RateLimitError as e:
+    print(f"Rate limit hit: {e.retry_after} seconds")
+    time.sleep(e.retry_after)
+    response = ai.chat("Hello world")
+    
+except BudgetExceededError as e:
+    print(f"Budget exceeded: {e.current_cost}/{e.budget_limit}")
+    
+except ModelNotAvailableError as e:
+    print(f"Model {e.model} not available, using {e.fallback_model}")
+    response = ai.chat("Hello world", model=e.fallback_model)
+    
+except AIProviderError as e:
+    print(f"Provider error: {e.provider} - {e.message}")
+```
+
+### Logging and Monitoring
+
+```python
+import logging
+
+# Configure logging
+ai.setup_logging(
+    level=logging.INFO,
+    log_to_file=True,
+    log_file="ai_module.log",
+    log_costs=True,
+    log_responses=False  # Don't log response content for privacy
+)
+
+# Custom monitoring
+@ai.monitor
+def my_ai_function():
+    response = ai.chat("Test message")
+    return response
+
+# Metrics collection
+ai.enable_metrics(
+    provider="prometheus",  # prometheus, datadog, custom
+    endpoint="http://localhost:9090"
+)
+```
+
+### Security Best Practices
+
+```python
+# API key management
+ai = AI(
+    api_key_rotation=True,          # Automatic key rotation
+    key_validation=True,            # Validate keys on startup
+    secure_key_storage=True         # Use system keyring
+)
+
+# Content filtering
+ai.enable_content_filter(
+    input_filter=True,              # Filter user inputs
+    output_filter=True,             # Filter AI outputs  
+    custom_filters=["custom_filter_func"],
+    block_sensitive_data=True       # Block PII, credit cards, etc.
+)
+
+# Request sanitization
+response = ai.chat(
+    user_input,
+    sanitize_input=True,            # Remove potentially harmful content
+    max_input_length=10000,         # Limit input length
+    rate_limit_per_user=True        # Per-user rate limiting
+)
+```
+
+### Testing and Development
+
+```python
+# Mock mode for testing
+ai = AI(mock_mode=True)
+response = ai.chat("Test")  # Returns mock response, no API calls
+
+# Offline mode with cached responses
+ai = AI(offline_mode=True, cache_dir="./test_cache")
+
+# Debug mode
+ai = AI(debug=True)  # Verbose logging, response inspection
+
+# A/B testing different providers
+responses = ai.compare_providers(
+    prompt="Same question",
+    providers=["openai", "anthropic", "google"],
+    metrics=["speed", "quality", "cost"]
+)
+```

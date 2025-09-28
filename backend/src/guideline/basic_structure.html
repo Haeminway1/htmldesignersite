@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A4 Document Template</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =================================================================== */
+        /* A4 프린트 규격 강제 설정 */
+        /* =================================================================== */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f5f5f5;
+            counter-reset: page;
+        }
+        
+        .eng-text { 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        /* =================================================================== */
+        /* A4 페이지 레이아웃 (210mm × 297mm) */
+        /* =================================================================== */
+        .page {
+            width: 210mm;
+            height: 297mm;
+            margin: 10mm auto;
+            padding: 20mm;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        
+        .page-content {
+            flex-grow: 1;
+            overflow: hidden;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        /* =================================================================== */
+        /* 헤더 & 푸터 */
+        /* =================================================================== */
+        .page-header, .page-footer {
+            width: 100%;
+            flex-shrink: 0;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        .page-header {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 15mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-footer {
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+            margin-top: 15mm;
+            text-align: center;
+        }
+        
+        /* 자동 페이지 번호 */
+        .page-footer::after {
+            counter-increment: page;
+            content: counter(page);
+        }
+        
+        /* 특정 페이지에서 헤더/푸터 숨기기 */
+        .no-header-footer .page-header,
+        .no-header-footer .page-footer {
+            display: none;
+        }
+        
+        /* =================================================================== */
+        /* 기본 텍스트 스타일 */
+        /* =================================================================== */
+        h1 {
+            font-size: 24pt;
+            font-weight: 700;
+            margin-bottom: 15mm;
+            color: #222;
+        }
+        
+        h2 {
+            font-size: 18pt;
+            font-weight: 600;
+            margin: 10mm 0 5mm 0;
+            color: #333;
+        }
+        
+        h3 {
+            font-size: 14pt;
+            font-weight: 600;
+            margin: 8mm 0 4mm 0;
+            color: #444;
+        }
+        
+        p {
+            margin-bottom: 4mm;
+            text-align: justify;
+        }
+        
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: 700; }
+        
+        /* =================================================================== */
+        /* 기본 리스트 스타일 */
+        /* =================================================================== */
+        ul, ol {
+            margin-left: 5mm;
+            margin-bottom: 4mm;
+        }
+        
+        li {
+            margin-bottom: 2mm;
+        }
+        
+        /* =================================================================== */
+        /* 기본 테이블 스타일 */
+        /* =================================================================== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5mm 0;
+            font-size: 10pt;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 3mm;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        /* =================================================================== */
+        /* 유틸리티 클래스 */
+        /* =================================================================== */
+        .spacer-sm { height: 2mm; }
+        .spacer { height: 4mm; }
+        .spacer-lg { height: 8mm; }
+        
+        .border {
+            border: 1px solid #ddd;
+            padding: 3mm;
+            border-radius: 2px;
+        }
+        
+        .bg-light {
+            background-color: #f8f9fa;
+        }
+        
+        .text-muted {
+            color: #666;
+        }
+        
+        /* =================================================================== */
+        /* 프린트 최적화 */
+        /* =================================================================== */
+        @media print {
+            body { 
+                background: white; 
+            }
+            .page { 
+                margin: 0; 
+                box-shadow: none; 
+                page-break-after: always;
+            }
+        }
+        
+        /* 페이지 브레이크 제어 */
+        h1, h2, h3 { 
+            break-after: avoid-page; 
+        }
+        
+        table, .border { 
+            break-inside: avoid; 
+        }
+        
+        p, li { 
+            orphans: 3; 
+            widows: 3; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- =================================================================== -->
+    <!-- 첫 번째 페이지 (표지 예시) -->
+    <!-- =================================================================== -->
+    <div class="page no-header-footer">
+        <div class="page-content">
+            <div class="spacer-lg"></div>
+            <div class="spacer-lg"></div>
+            
+            <h1 class="text-center">문서 제목</h1>
+            
+            <div class="spacer"></div>
+            
+            <p class="text-center text-muted eng-text">Document Subtitle</p>
+            
+            <div class="spacer-lg"></div>
+            <div class="spacer-lg"></div>
+            <div class="spacer-lg"></div>
+            
+            <p class="text-center">작성자: 홍길동</p>
+            <p class="text-center text-muted">2024년 12월</p>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 두 번째 페이지 (일반 내용 페이지 예시) -->
+    <!-- =================================================================== -->
+    <div class="page">
+        <div class="page-header">
+            <span>문서 제목</span>
+            <span class="eng-text">Document Title</span>
+        </div>
+        
+        <div class="page-content">
+            <h2>1. 서론</h2>
+            <p>
+                이것은 A4 규격으로 출력 가능한 HTML 문서 템플릿입니다. 
+                이 템플릿은 웹 브라우저에서 보기에도 좋고, PDF로 출력했을 때도 
+                정확한 A4 크기로 인쇄됩니다.
+            </p>
+            
+            <p>
+                각 페이지는 210mm × 297mm의 A4 표준 크기를 가지며, 
+                적절한 여백과 함께 가독성을 고려한 레이아웃으로 구성되어 있습니다.
+            </p>
+            
+            <h3>1.1 주요 특징</h3>
+            <ul>
+                <li>A4 규격 강제 출력 (@page size: A4)</li>
+                <li>자동 페이지 번호</li>
+                <li>헤더와 푸터 지원</li>
+                <li>프린트 최적화</li>
+                <li>반응형 텍스트 레이아웃</li>
+            </ul>
+            
+            <div class="spacer"></div>
+            
+            <h3>1.2 사용 예시 테이블</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>항목</th>
+                        <th>설명</th>
+                        <th>비고</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>페이지 크기</td>
+                        <td>210mm × 297mm (A4 표준)</td>
+                        <td>CSS로 강제 지정</td>
+                    </tr>
+                    <tr>
+                        <td>여백</td>
+                        <td>상하좌우 20mm</td>
+                        <td>가독성 최적화</td>
+                    </tr>
+                    <tr>
+                        <td>폰트</td>
+                        <td>Noto Sans KR / Inter</td>
+                        <td>웹폰트 적용</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="page-footer">
+            <!-- 자동 페이지 번호가 여기에 표시됩니다 -->
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 세 번째 페이지 (추가 내용 예시) -->
+    <!-- =================================================================== -->
+    <div class="page">
+        <div class="page-header">
+            <span>문서 제목</span>
+            <span class="eng-text">Document Title</span>
+        </div>
+        
+        <div class="page-content">
+            <h2>2. 사용 방법</h2>
+            
+            <h3>2.1 기본 구조</h3>
+            <p>
+                새로운 페이지를 추가하려면 <code>&lt;div class="page"&gt;</code> 요소를 
+                복사하여 사용하시면 됩니다. 각 페이지는 자동으로 새로운 페이지로 분할됩니다.
+            </p>
+            
+            <div class="border bg-light">
+                <p class="font-bold">참고사항:</p>
+                <p>
+                    이 템플릿은 Chrome, Firefox, Safari 등 모든 주요 브라우저에서 
+                    정상적으로 작동하며, "인쇄" 기능을 통해 PDF로 저장할 수 있습니다.
+                </p>
+            </div>
+            
+            <div class="spacer"></div>
+            
+            <h3>2.2 스타일 커스터마이징</h3>
+            <ol>
+                <li>색상 변경: CSS 변수 또는 직접 색상값 수정</li>
+                <li>폰트 변경: Google Fonts 링크 및 font-family 수정</li>
+                <li>여백 조정: .page 클래스의 padding 값 수정</li>
+                <li>헤더/푸터 커스터마이징: 해당 클래스 스타일 수정</li>
+            </ol>
+            
+            <div class="spacer-lg"></div>
+            
+            <p class="text-center text-muted">
+                이것은 기본 템플릿입니다. 필요에 따라 자유롭게 수정하여 사용하세요.
+            </p>
+        </div>
+        
+        <div class="page-footer">
+            <!-- 자동 페이지 번호 -->
+        </div>
+    </div>
+
+</body>
+</html>

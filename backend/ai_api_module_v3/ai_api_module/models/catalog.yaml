@@ -1,0 +1,134 @@
+# ai_api_module/models/catalog.yaml
+
+aliases:
+  # Smart routing aliases
+  smart: gpt-5
+  fast: gpt-5-mini
+  cheap: gpt-4.1-nano
+  creative: claude-3-7-sonnet-20250219
+  
+  # Provider shortcuts
+  gpt: gpt-5
+  claude: claude-3-7-sonnet-20250219
+  gemini: gemini-2.5-pro
+  grok: grok-4
+  
+  # Task-specific
+  coding: grok-code-fast-1
+  analysis: claude-opus-4-20250514
+  research: o3-deep-research
+  vision: claude-3-7-sonnet-20250219
+  
+  # Image generation
+  image: gpt-image-1
+  gpt-image: gpt-image-1
+  claude-image: gpt-image-1
+  gemini-image: gemini-2.5-flash-image-preview
+  grok-image: grok-2-image-1212
+
+models:
+  # OpenAI Models
+  gpt-5:
+    provider: openai
+    type: text
+    capabilities: [text, reasoning, code, tools]
+    context_window: 200000
+    max_output: 32000
+    pricing:
+      input: 1.25
+      output: 10.00
+  
+  gpt-5-mini:
+    provider: openai
+    type: text
+    capabilities: [text, code, tools]
+    context_window: 200000
+    max_output: 32000
+    pricing:
+      input: 0.25
+      output: 2.00
+  
+  gpt-image-1:
+    provider: openai
+    type: image
+    capabilities: [image_generation]
+    pricing:
+      image: 0.042
+  
+  # Anthropic Models
+  claude-opus-4-20250514:
+    provider: anthropic
+    type: text
+    capabilities: [text, reasoning, analysis, vision]
+    context_window: 200000
+    max_output: 32000
+    pricing:
+      input: 15.00
+      output: 75.00
+  
+  claude-3-7-sonnet-20250219:
+    provider: anthropic
+    type: text
+    capabilities: [text, reasoning, vision, tools]
+    context_window: 200000
+    max_output: 64000
+    pricing:
+      input: 3.00
+      output: 15.00
+  
+  # Google Models
+  gemini-2.5-pro:
+    provider: google
+    type: text
+    capabilities: [text, vision, audio, tools, web_search]
+    context_window: 1000000
+    max_output: 32000
+    pricing:
+      input: 1.25
+      output: 10.00
+  
+  gemini-2.5-flash:
+    provider: google
+    type: text
+    capabilities: [text, vision, tools, web_search]
+    context_window: 1000000
+    max_output: 32000
+    pricing:
+      input: 0.10
+      output: 0.40
+  
+  # xAI Models
+  grok-4:
+    provider: xai
+    type: text
+    capabilities: [text, reasoning, vision, web_search]
+    context_window: 256000
+    max_output: 32000
+    pricing:
+      input: 3.00
+      output: 15.00
+  
+  grok-3:
+    provider: xai
+    type: text
+    capabilities: [text, reasoning]
+    context_window: 131072
+    max_output: 32000
+    pricing:
+      input: 3.00
+      output: 15.00
+
+provider_defaults:
+  openai: gpt-5
+  anthropic: claude-3-7-sonnet-20250219
+  google: gemini-2.5-flash
+  xai: grok-4
+
+task_routing:
+  reasoning: [gpt-5, claude-opus-4-0, grok-4]
+  coding: [grok-code-fast-1, gpt-5, claude-3-7-sonnet-20250219]
+  creative: [claude-3-7-sonnet-20250219, gpt-5, gemini-2.5-pro]
+  analysis: [claude-opus-4-0, gpt-5, gemini-2.5-pro]
+  vision: [claude-3-7-sonnet-20250219, gemini-2.5-flash, grok-4]
+  image_generation: [gpt-image-1, gemini-2.5-flash-image-preview, grok-2-image-1212]
+  web_search: [grok-4, gemini-2.5-flash]

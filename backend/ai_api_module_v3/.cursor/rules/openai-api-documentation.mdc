@@ -1,0 +1,662 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# OpenAI API Documentation
+
+## Table of Contents
+
+1. [Introduction](#introduction)
+2. [Models](#models)
+3. [Core Capabilities](#core-capabilities)
+4. [API Features](#api-features)
+5. [Developer Tools](#developer-tools)
+6. [Pricing & Limits](#pricing--limits)
+
+---
+
+## Introduction
+
+### Quick Start
+
+The OpenAI API provides a simple interface to state-of-the-art AI models for text generation, natural language processing, computer vision, audio processing, and more.
+
+#### Basic Example
+
+python
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-5",
+    input="Write a one-sentence bedtime story about a unicorn."
+)
+
+print(response.output_text)
+```
+
+javascript
+
+```javascript
+import OpenAI from "openai";
+const client = new OpenAI();
+
+const response = await client.responses.create({
+    model: "gpt-5",
+    input: "Write a one-sentence bedtime story about a unicorn."
+});
+
+console.log(response.output_text);
+```
+
+---
+
+## Models
+
+### Model Families
+
+#### Frontier Models
+
+**Recommended for most tasks**
+
+|Model|Description|Best For|
+|---|---|---|
+|**gpt-5**|Most advanced model for coding and agentic tasks|Complex reasoning, code generation, multi-step planning|
+|**gpt-5-mini**|Faster, cost-efficient GPT-5|Well-defined tasks, balanced speed/capability|
+|**gpt-5-nano**|Fastest GPT-5 variant|High-throughput, simple tasks|
+|**gpt-4.1**|Smartest non-reasoning model|General-purpose tasks|
+|**gpt-4.1-mini**|Cost-optimized GPT-4.1|Balanced performance|
+|**gpt-4.1-nano**|Smallest GPT-4.1|High-volume, simple tasks|
+
+#### Specialized Models
+
+|Model|Purpose|Key Features|
+|---|---|---|
+|**o3-deep-research**|Deep research and analysis|Synthesizes 100+ sources|
+|**o4-mini-deep-research**|Faster deep research|More affordable research|
+|**gpt-image-1**|Image generation|State-of-the-art image creation|
+|**dall-e-3**|Previous gen image model|Legacy image generation|
+|**gpt-4o-mini-tts**|Text-to-speech|GPT-4o mini powered TTS|
+|**gpt-4o-transcribe**|Speech-to-text|High-quality transcription|
+|**gpt-4o-mini-transcribe**|Speech-to-text|Fast transcription|
+
+#### Realtime & Audio Models
+
+|Model|Use Case|
+|---|---|
+|**gpt-realtime**|Realtime text and audio I/O|
+|**gpt-audio**|Audio I/O with Chat Completions|
+
+---
+
+## Core Capabilities
+
+### Text Generation
+
+#### Basic Text Generation
+
+python
+
+```python
+from openai import OpenAI
+client = OpenAI()
+
+completion = client.chat.completions.create(
+    model="gpt-5",
+    messages=[
+        {"role": "user", "content": "Write a haiku about code."}
+    ]
+)
+```
+
+#### Advanced Features
+
+##### Reasoning Control
+
+python
+
+```python
+# For complex tasks
+response = client.responses.create(
+    model="gpt-5",
+    input="Find the null pointer exception in this code...",
+    reasoning={"effort": "high"}  # Options: minimal, low, medium, high
+)
+
+# For fast responses
+response = client.responses.create(
+    model="gpt-5",
+    input="Simple question",
+    reasoning={"effort": "minimal"}
+)
+```
+
+##### Verbosity Control
+
+python
+
+```python
+response = client.responses.create(
+    model="gpt-5",
+    input="Explain quantum computing",
+    text={"verbosity": "low"}  # Options: low, medium, high
+)
+```
+
+##### Custom Tools
+
+python
+
+```python
+tools = [{
+    "type": "custom",
+    "name": "code_exec",
+    "description": "Executes arbitrary python code"
+}]
+
+response = client.responses.create(
+    model="gpt-5",
+    input="Calculate pi to 10 decimal places",
+    tools=tools
+)
+```
+
+### Structured Outputs
+
+Ensure responses adhere to JSON schemas:
+
+python
+
+```python
+from pydantic import BaseModel
+
+class MathResponse(BaseModel):
+    steps: list[dict]
+    final_answer: str
+
+completion = client.chat.completions.parse(
+    model="gpt-4o-2024-08-06",
+    messages=[
+        {"role": "system", "content": "You are a math tutor."},
+        {"role": "user", "content": "Solve 8x + 7 = -23"}
+    ],
+    response_format=MathResponse
+)
+```
+
+### Image Generation
+
+#### Using GPT Image 1
+
+python
+
+```python
+result = client.images.generate(
+    model="gpt-image-1",
+    prompt="A futuristic city at sunset",
+    size="1024x1024",
+    quality="high",
+    background="transparent"  # For transparent backgrounds
+)
+```
+
+#### Image Editing with Mask
+
+python
+
+```python
+result = client.images.edit(
+    model="gpt-image-1",
+    image=open("original.png", "rb"),
+    mask=open("mask.png", "rb"),
+    prompt="Add a rainbow in the sky"
+)
+```
+
+#### Multi-turn Image Generation
+
+python
+
+```python
+# First generation
+response = client.responses.create(
+    model="gpt-5",
+    input="Generate an image of a cat",
+    tools=[{"type": "image_generation"}]
+)
+
+# Follow-up using previous response
+response_followup = client.responses.create(
+    model="gpt-5",
+    previous_response_id=response.id,
+    input="Now make it look realistic",
+    tools=[{"type": "image_generation"}]
+)
+```
+
+### Vision (Image Analysis)
+
+python
+
+```python
+response = client.chat.completions.create(
+    model="gpt-4.1-mini",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What's in this image?"},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": "https://example.com/image.jpg",
+                    "detail": "high"  # low, high, or auto
+                }
+            }
+        ]
+    }]
+)
+```
+
+### Audio Capabilities
+
+#### Text-to-Speech
+
+python
+
+```python
+from pathlib import Path
+
+speech_file_path = Path("speech.mp3")
+
+with client.audio.speech.with_streaming_response.create(
+    model="gpt-4o-mini-tts",
+    voice="coral",
+    input="Hello world!",
+    instructions="Speak in a cheerful tone."
+) as response:
+    response.stream_to_file(speech_file_path)
+```
+
+**Available Voices**: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer
+
+#### Speech-to-Text
+
+python
+
+```python
+audio_file = open("audio.mp3", "rb")
+
+transcription = client.audio.transcriptions.create(
+    model="gpt-4o-transcribe",
+    file=audio_file,
+    response_format="text"
+)
+```
+
+##### Streaming Transcription
+
+python
+
+```python
+stream = client.audio.transcriptions.create(
+    model="gpt-4o-mini-transcribe",
+    file=audio_file,
+    response_format="text",
+    stream=True
+)
+
+for event in stream:
+    print(event)
+```
+
+### Web Search
+
+#### Basic Web Search
+
+python
+
+```python
+response = client.responses.create(
+    model="gpt-5",
+    input="What was a positive news story from today?",
+    tools=[{"type": "web_search"}]
+)
+```
+
+#### Advanced Web Search
+
+python
+
+```python
+response = client.responses.create(
+    model="gpt-5",
+    tools=[{
+        "type": "web_search",
+        "filters": {
+            "allowed_domains": [
+                "pubmed.ncbi.nlm.nih.gov",
+                "clinicaltrials.gov",
+                "www.who.int"
+            ]
+        }
+    }],
+    include=["web_search_call.action.sources"],
+    input="Latest research on diabetes treatment"
+)
+```
+
+### Deep Research
+
+For comprehensive research tasks:
+
+python
+
+```python
+response = client.responses.create(
+    model="o3-deep-research",
+    input="""
+    Research the economic impact of AI on healthcare.
+    Include statistics, trends, and citations.
+    """,
+    background=True,
+    tools=[
+        {"type": "web_search_preview"},
+        {
+            "type": "file_search",
+            "vector_store_ids": ["vs_123"]
+        },
+        {"type": "code_interpreter"}
+    ]
+)
+```
+
+---
+
+## API Features
+
+### Function Calling
+
+python
+
+```python
+tools = [{
+    "type": "function",
+    "name": "get_weather",
+    "description": "Get current weather",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {"type": "string"},
+            "unit": {"type": "string", "enum": ["F", "C"]}
+        },
+        "required": ["location", "unit"],
+        "additionalProperties": False
+    },
+    "strict": True
+}]
+
+response = client.responses.create(
+    model="gpt-5",
+    input="What's the weather in Paris?",
+    tools=tools
+)
+```
+
+### Streaming
+
+python
+
+```python
+stream = client.responses.create(
+    model="gpt-5",
+    input="Tell me a story",
+    stream=True
+)
+
+for event in stream:
+    print(event)
+```
+
+### File Operations
+
+python
+
+```python
+# Upload file
+file = client.files.create(
+    file=open("document.pdf", "rb"),
+    purpose="user_data"
+)
+
+# Use in response
+response = client.responses.create(
+    model="gpt-5",
+    input=[{
+        "role": "user",
+        "content": [
+            {"type": "input_text", "text": "Summarize this document"},
+            {"type": "input_file", "file_id": file.id}
+        ]
+    }]
+)
+```
+
+### Conversation Management
+
+python
+
+```python
+# First message
+response1 = client.responses.create(
+    model="gpt-5",
+    input="Hello, let's discuss AI"
+)
+
+# Continue conversation
+response2 = client.responses.create(
+    model="gpt-5",
+    previous_response_id=response1.id,
+    input="What are the latest developments?"
+)
+```
+
+---
+
+## Developer Tools
+
+### Fine-Tuning
+
+python
+
+```python
+# Create fine-tuning job
+job = client.fine_tuning.jobs.create(
+    training_file="file-abc123",
+    model="gpt-4.1",
+    hyperparameters={
+        "n_epochs": 3
+    }
+)
+```
+
+### Graders
+
+For evaluating model performance:
+
+python
+
+```python
+grader = {
+    "type": "score_model",
+    "name": "quality_grader",
+    "input": [
+        {"role": "system", "content": "Rate the quality from 0-1"},
+        {"role": "user", "content": "Model: {{sample.output_text}}"}
+    ],
+    "model": "o3-mini-2024-01-31",
+    "range": [0, 1]
+}
+```
+
+### Batch Processing
+
+python
+
+```python
+batch = client.batches.create(
+    input_file_id="file-abc123",
+    endpoint="/v1/chat/completions",
+    completion_window="24h"
+)
+```
+
+### Agents SDK
+
+python
+
+```python
+from agents import Agent, Runner
+
+agent = Agent(
+    name="Assistant",
+    instructions="You are a helpful assistant.",
+    tools=[{"type": "web_search"}]
+)
+
+result = await Runner.run(agent, input="Help me research AI")
+```
+
+---
+
+## Pricing & Limits
+
+### Pricing Overview
+
+#### Text Tokens (per 1M tokens)
+
+|Model|Standard Input|Cached Input|Output|
+|---|---|---|---|
+|**gpt-5**|$1.25|$0.125|$10.00|
+|**gpt-5-mini**|$0.25|$0.025|$2.00|
+|**gpt-5-nano**|$0.05|$0.005|$0.40|
+|**gpt-4.1**|$2.00|$0.50|$8.00|
+|**gpt-4.1-mini**|$0.40|$0.10|$1.60|
+|**gpt-4.1-nano**|$0.10|$0.025|$0.40|
+
+#### Image Generation (per image)
+
+|Model|Quality|1024×1024|
+|---|---|---|
+|**GPT Image 1**|Low|$0.011|
+||Medium|$0.042|
+||High|$0.167|
+|**DALL·E 3**|Standard|$0.04|
+||HD|$0.08|
+
+#### Audio (per minute)
+
+|Model|Cost|
+|---|---|
+|**Whisper**|$0.006|
+|**TTS**|$15.00/1M chars|
+|**gpt-4o-mini-tts**|$0.015|
+|**gpt-4o-transcribe**|$0.006|
+
+### Rate Limits
+
+#### Usage Tiers
+
+|Tier|Qualification|Monthly Limit|
+|---|---|---|
+|Free|Allowed geography|$100|
+|Tier 1|$5 paid|$100|
+|Tier 2|$50 paid + 7 days|$500|
+|Tier 3|$100 paid + 7 days|$1,000|
+|Tier 4|$250 paid + 14 days|$5,000|
+|Tier 5|$1,000 paid + 30 days|$200,000|
+
+#### Rate Limit Types
+
+- **RPM**: Requests per minute
+- **RPD**: Requests per day
+- **TPM**: Tokens per minute
+- **TPD**: Tokens per day
+- **IPM**: Images per minute
+
+#### Handling Rate Limits
+
+python
+
+```python
+from tenacity import retry, wait_random_exponential, stop_after_attempt
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+def completion_with_backoff(**kwargs):
+    return client.completions.create(**kwargs)
+```
+
+---
+
+## Best Practices
+
+### Prompt Engineering
+
+1. **Use appropriate message roles**:
+    - `developer`: High-priority system instructions
+    - `user`: End-user inputs
+    - `assistant`: Model responses
+2. **Pin model versions** for production:
+    
+    python
+    
+    ```python
+    model="gpt-5-2025-08-07"  # Use specific snapshot
+    ```
+    
+3. **Build evals** to measure performance
+4. **Use caching** for repeated content
+
+### Error Handling
+
+python
+
+```python
+try:
+    response = client.chat.completions.create(...)
+    
+    if response.choices[0].finish_reason == "length":
+        # Handle incomplete response
+        pass
+    elif response.choices[0].message.refusal:
+        # Handle safety refusal
+        pass
+        
+except openai.RateLimitError:
+    # Implement exponential backoff
+    pass
+except openai.APIError as e:
+    # Handle API errors
+    pass
+```
+
+### Security Considerations
+
+1. **Never expose API keys** in client-side code
+2. **Use environment variables** for credentials
+3. **Implement rate limiting** in your application
+4. **Validate and sanitize** all user inputs
+5. **Monitor usage** through the dashboard
+
+---
+
+## Additional Resources
+
+- [OpenAI Platform](https://platform.openai.com)
+- [API Reference](https://platform.openai.com/docs/api-reference)
+- [Cookbook Examples](https://cookbook.openai.com)
+- [Model Documentation](https://platform.openai.com/docs/models)
+- [Pricing Calculator](https://openai.com/api/pricing)
+- [Status Page](https://status.openai.com)

@@ -1,0 +1,27 @@
+{
+    "ai_settings": {
+        "model": "gemini-2.5-pro",
+        "temperature": 0.7,
+        "reference": ["guideline/guideline.md", "guideline/basic_structure.html"]
+    },
+    "prompts": {
+        "system_prompt": "너는 매우 유능하고 정확하고 실수를 절대 용납하지 않는 ENTJ 워커홀릭 html 교재 디자이너야. 주어진 reference 와 guideline을 무조건적으로 따라서 완성도 높은 html 교재를 출력해. 너의 디자인 센스는 매우 훌륭하고 2025년 최신 트렌드를 선도하는 매우 뛰어난 센스야. 첨부된 파일들의 내용을 적극 활용하여 HTML 교재를 제작해.",
+        "preset_prompt": "결과물은 쓸데없는 응답없이 ```html``` 로 감싸서 출력해. 주어진 guideline을 무조건적으로 따라서 완성도 높은 html 교재를 출력해. 세련되고 모던하고 심플한 디자인 해줘. 주어진 html 규격을 무조건 준수해. a4 규격을 강제시켜주기 때문에 그것을 기반으로 세련되고 모던하게 디자인해줘. 절대 마크다운 요소를 그대로 사용해선 안돼. 무조건 html에 맞게 변형해서 출력해야해. 첨부된 파일들(PDF, 문서, 이미지 등)의 내용을 분석하고 활용해서 관련 HTML 교재를 제작해줘.",
+        "user_prompt": "해당 파일을 기반으로 영어 단어장을 새롭게 디자인해줘."
+    },
+    "file_processing": {
+        "input_directory": "worktable/input",
+        "enable_direct_file_attachment": true,
+        "supported_file_types": [
+            ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt",
+            ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm",
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp",
+            ".epub", ".zip"
+        ],
+        "max_file_size_mb": 10,
+        "max_files_per_request": 20
+    },
+    "output": {
+        "output_directory": "worktable"
+    }
+}

@@ -1,0 +1,48 @@
+# Flask 웹 프레임워크
+Flask==3.0.0
+flask-cors==4.0.0
+flask-limiter==3.5.0
+
+# PDF 변환
+pdfkit==1.0.0
+
+# 파일 처리
+Werkzeug==3.0.1
+
+# HTTP 클라이언트 (AI API 모듈용)
+requests==2.31.0
+httpx==0.25.2
+
+# 비동기 처리
+aiohttp==3.9.1
+
+# 데이터 처리
+pandas==2.1.4
+numpy==1.25.2
+
+# 이미지 처리 (AI API 모듈용)
+Pillow==10.1.0
+
+# 웹서버 (프로덕션용)
+gunicorn==21.2.0
+
+# AI API 모듈 의존성
+google-genai==0.3.0
+openai==1.3.8
+anthropic==0.7.8
+
+# xAI SDK (체크 필요)
+# xai-sdk
+
+# 텍스트 처리
+python-magic==0.4.27
+
+# 환경 변수
+python-dotenv==1.0.0
+
+# 로깅
+structlog==23.2.0
+
+# 유틸리티
+pathlib2==2.3.7
+typing-extensions==4.8.0

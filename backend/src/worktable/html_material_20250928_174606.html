@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나트랑 일기 예보 분석표</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =================================================================== */
+        /* Design Tokens & Guideline Adherence */
+        /* =================================================================== */
+        :root {
+            /* Color Palette (Friendly/Educational) */
+            --bg: #FFFFFF;
+            --ink: #1F2937;
+            --muted: #667085;
+            --line: #E5E7EB;
+            --accent: #1AA5A5; /* Teal */
+            --accent-weak: #F0FAFA;
+            
+            /* Typography */
+            --font-ko: 'Noto Sans KR', sans-serif;
+            --font-en: 'Inter', sans-serif;
+            
+            /* Layout */
+            --page-margin-top: 20mm;
+            --page-margin-side: 18mm;
+            --page-margin-bottom: 20mm;
+        }
+        
+        /* =================================================================== */
+        /* A4 프린트 규격 강제 설정 */
+        /* =================================================================== */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            background: #f0f2f5;
+            color: var(--ink);
+            font-family: var(--font-ko);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            counter-reset: page;
+        }
+        
+        .eng-text { 
+            font-family: var(--font-en); 
+        }
+        
+        /* =================================================================== */
+        /* A4 페이지 레이아웃 (210mm × 297mm) */
+        /* =================================================================== */
+        .page {
+            width: 210mm;
+            min-height: 297mm; /* Use min-height to avoid content overflow issues */
+            margin: 10mm auto;
+            padding: var(--page-margin-top) var(--page-margin-side) var(--page-margin-bottom) var(--page-margin-side);
+            background: var(--bg);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        
+        .page-content {
+            flex-grow: 1;
+            overflow: hidden;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: var(--ink);
+        }
+        
+        /* =================================================================== */
+        /* 헤더 & 푸터 */
+        /* =================================================================== */
+        .page-header, .page-footer {
+            width: calc(100% - (var(--page-margin-side) * 2));
+            position: absolute;
+            left: var(--page-margin-side);
+            font-size: 9pt;
+            color: var(--muted);
+        }
+        
+        .page-header {
+            top: var(--page-margin-top);
+            padding-bottom: 8px;
+            margin-bottom: 15mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-footer {
+            bottom: var(--page-margin-bottom);
+            padding-top: 8px;
+            text-align: center;
+            border-top: 1px solid var(--line);
+        }
+        
+        .page-footer::after {
+            counter-increment: page;
+            content: counter(page);
+        }
+        
+        .no-header-footer .page-header,
+        .no-header-footer .page-footer {
+            display: none;
+        }
+        
+        /* =================================================================== */
+        /* 타이포그래피 (Guideline 준수) */
+        /* =================================================================== */
+        h1 {
+            font-size: 28pt;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.25;
+            margin-bottom: 12mm;
+            letter-spacing: -0.5pt;
+        }
+        
+        h2 {
+            font-size: 18pt;
+            font-weight: 700;
+            margin: 12mm 0 6mm 0;
+            color: var(--ink);
+            border-bottom: 2px solid var(--line);
+            padding-bottom: 3mm;
+            letter-spacing: -0.2pt;
+        }
+        
+        h3 {
+            font-size: 14pt;
+            font-weight: 600;
+            margin: 8mm 0 4mm 0;
+            color: var(--accent);
+        }
+        
+        p {
+            margin-bottom: 4mm;
+            text-align: justify;
+        }
+
+        .subtitle {
+            font-size: 14pt;
+            color: var(--muted);
+            margin-top: -8mm;
+            margin-bottom: 15mm;
+        }
+        
+        /* =================================================================== */
+        /* 테이블 스타일 (Modern & Simple) */
+        /* =================================================================== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6mm 0;
+            font-size: 10pt;
+            break-inside: avoid;
+        }
+        
+        th, td {
+            padding: 3mm 2mm;
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--line);
+        }
+        
+        th {
+            background-color: var(--accent-weak);
+            font-weight: 600;
+            color: var(--accent);
+            border-top: 2px solid var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        td { color: #374151; }
+        td:first-child { font-weight: 500; }
+        .text-center { text-align: center; }
+        
+        /* =================================================================== */
+        /* 컴포넌트 & 유틸리티 */
+        /* =================================================================== */
+        .callout {
+            background: var(--accent-weak);
+            border-left: 4px solid var(--accent);
+            padding: 4mm;
+            margin: 6mm 0;
+            border-radius: 0 6px 6px 0;
+            break-inside: avoid;
+        }
+        .callout p { margin-bottom: 2mm; }
+        .callout p:last-child { margin-bottom: 0; }
+        .callout .title {
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 2mm;
+            font-size: 12pt;
+        }
+        
+        .chart-container {
+            width: 100%;
+            margin: 8mm 0;
+            break-inside: avoid;
+        }
+        .chart-container svg {
+            width: 100%;
+            font-family: var(--font-en);
+            font-size: 9pt;
+        }
+        .chart-title {
+            font-size: 12pt;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 4mm;
+            text-align: center;
+        }
+        .chart-caption {
+            font-size: 9pt;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 2mm;
+        }
+        
+        .cover-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+        }
+        .cover-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10mm;
+            color: var(--accent);
+        }
+        
+        /* =================================================================== */
+        /* 프린트 최적화 */
+        /* =================================================================== */
+        @media print {
+            body { 
+                background: var(--bg); 
+            }
+            .page { 
+                margin: 0; 
+                box-shadow: none; 
+                page-break-after: always;
+            }
+        }
+        
+        h1, h2, h3 { 
+            break-after: avoid-page; 
+        }
+        p, li { 
+            orphans: 3; 
+            widows: 3; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- =================================================================== -->
+    <!-- 페이지 1: 표지 -->
+    <!-- =================================================================== -->
+    <div class="page no-header-footer">
+        <div class="page-content">
+            <div class="cover-container">
+                <div class="cover-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-2.43-2.43A3.75 3.75 0 0013.5 3c-1.352 0-2.56.6-3.32 1.579a4.5 4.5 0 00-6.32 6.32z" />
+                    </svg>
+                </div>
+                <h1>나트랑 날씨<br>완전 분석 리포트</h1>
+                <p class="subtitle eng-text">A Data-Driven Guide for The Perfect Travel Time</p>
+                <div style="width: 80px; height: 3px; background: var(--accent); margin: 10mm 0;"></div>
+                <p style="color: var(--muted);">최적의 여행 시기를 찾기 위한<br>상세 데이터 분석 및 가이드</p>
+                <p style="font-size: 10pt; color: var(--muted); margin-top: 50mm;">2024. 12.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 페이지 2: 개요 및 요약 -->
+    <!-- =================================================================== -->
+    <div class="page">
+        <div class="page-header">
+            <span>나트랑 날씨 분석 리포트</span>
+            <span class="eng-text">Nha Trang Weather Analysis</span>
+        </div>
+        
+        <div class="page-content" style="padding-top: 15mm; padding-bottom: 15mm;">
+            <h2>1. 나트랑 날씨 한눈에 보기</h2>
+            <p>
+                베트남의 대표적인 휴양지 나트랑은 열대 사바나 기후에 속하며, 연중 온화한 날씨를 보입니다.
+                크게 비가 적고 화창한 **건기**와 강수량이 집중되는 **우기**로 나뉩니다. 본 리포트는 월별 상세 데이터를 통해
+                여행 목적에 맞는 최적의 시기를 선택할 수 있도록 돕는 것을 목표로 합니다.
+            </p>
+            
+            <h3>나트랑 기후 핵심 요약</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>구분</th>
+                        <th>기간</th>
+                        <th>특징</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>건기 (Dry Season)</strong></td>
+                        <td class="eng-text">Jan - Aug</td>
+                        <td>강수량이 적고 맑은 날이 많아 해양 액티비티에 최적.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>우기 (Rainy Season)</strong></td>
+                        <td class="eng-text">Sep - Dec</td>
+                        <td>강수량이 많고 습도가 높음. 9월~11월에 비가 집중됨.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>평균 기온</strong></td>
+                        <td class="eng-text">26°C - 33°C</td>
+                        <td>연중 큰 기온 변화 없이 따뜻한 날씨를 유지.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>최적 여행 시기</strong></td>
+                        <td class="eng-text">Feb - May</td>
+                        <td>가장 쾌적한 날씨로, 관광 및 휴양 모두에 적합.</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="callout">
+                <div class="title">리포트 활용 가이드</div>
+                <p>
+                    다음 페이지부터는 월별 평균 기온, 강수량, 습도 등 상세 데이터를 그래프와 도표로 시각화하여 제공합니다.
+                    이를 통해 개인의 여행 스타일에 맞는 최적의 방문 시점을 계획해 보세요.
+                </p>
+            </div>
+        </div>
+        
+        <div class="page-footer"></div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 페이지 3: 월별 데이터 그래프 -->
+    <!-- =================================================================== -->
+    <div class="page">
+        <div class="page-header">
+            <span>나트랑 날씨 분석 리포트</span>
+            <span class="eng-text">Nha Trang Weather Analysis</span>
+        </div>
+        
+        <div class="page-content" style="padding-top: 15mm; padding-bottom: 15mm;">
+            <h2>2. 월별 날씨 데이터 시각화</h2>
+            <p>
+                나트랑의 연간 날씨 패턴을 직관적으로 파악할 수 있도록 월별 평균 기온과 강수량 데이터를 그래프로 시각화했습니다.
+                이를 통해 건기와 우기의 변화를 명확하게 확인할 수 있습니다.
+            </p>
+
+            <div class="chart-container">
+                <div class="chart-title">월별 평균 최고/최저 기온 (°C)</div>
+                <svg viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Grid -->
+                    <line x1="40" y1="20" x2="40" y2="200" stroke="#E5E7EB" stroke-width="1"/>
+                    <line x1="40" y1="200" x2="480" y2="200" stroke="#E5E7EB" stroke-width="1"/>
+                    <text x="15" y="25" fill="#667085">35</text>
+                    <line x1="35" y1="20" x2="480" y2="20" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+                    <text x="15" y="65" fill="#667085">30</text>
+                    <line x1="35" y1="60" x2="480" y2="60" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+                    <text x="15" y="105" fill="#667085">25</text>
+                    <line x1="35" y1="100" x2="480" y2="100" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+                    <text x="15" y="145" fill="#667085">20</text>
+                    <line x1="35" y1="140" x2="480" y2="140" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+                    <text x="15" y="185" fill="#667085">15</text>
+                    <line x1="35" y1="180" x2="480" y2="180" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+
+                    <!-- Data: Max Temp (Blue) -->
+                    <polyline points="55,92 75,84 95,72 115,56 135,40 155,36 175,40 195,44 215,64 235,80 255,92 275,100" fill="none" stroke="#1AA5A5" stroke-width="2"/>
+                    <!-- Data: Min Temp (Gray) -->
+                    <polyline points="55,124 75,120 95,112 115,100 135,96 155,96 175,96 195,100 215,108 235,116 255,120 275,124" fill="none" stroke="#A0AEC0" stroke-width="2"/>
+                    
+                    <!-- X-axis Labels -->
+                    <text x="50" y="215" fill="#667085">1월</text> <text x="90" y="215" fill="#667085">3월</text> <text x="130" y="215" fill="#667085">5월</text> <text x="170" y="215" fill="#667085">7월</text> <text x="210" y="215" fill="#667085">9월</text> <text x="250" y="215" fill="#667085">11월</text>
+                </svg>
+                <div class="chart-caption">그래프 1: 기온 변화. 5-8월이 가장 덥고, 12-1월이 비교적 선선합니다.</div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">월별 평균 강수량 (mm)</div>
+                <svg viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Grid -->
+                    <line x1="40" y1="20" x2="40" y2="200" stroke="#E5E7EB" stroke-width="1"/>
+                    <line x1="40" y1="200" x2="480" y2="200" stroke="#E5E7EB" stroke-width="1"/>
+                    <text x="0" y="25" fill="#667085">350</text> <line x1="35" y1="20" x2="480" y2="20" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+                    <text x="10" y="95" fill="#667085">175</text> <line x1="35" y1="90" x2="480" y2="90" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+                    <text x="25" y="165" fill="#667085">0</text> <line x1="35" y1="160" x2="480" y2="160" stroke="#E5E7EB" stroke-dasharray="2" stroke-width="1"/>
+
+                    <!-- Bars -->
+                    <rect x="45" y="182" width="20" height="18" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="70" y="192" width="20" height="8" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="95" y="190" width="20" height="10" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="120" y="184" width="20" height="16" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="145" y="178" width="20" height="22" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="170" y="182" width="20" height="18" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="195" y="180" width="20" height="20" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="220" y="178" width="20" height="22" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="245" y="110" width="20" height="90" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="270" y="40" width="20" height="160" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="295" y="25" width="20" height="175" fill="#1AA5A5" fill-opacity="0.7"/>
+                    <rect x="320" y="120" width="20" height="80" fill="#1AA5A5" fill-opacity="0.7"/>
+                    
+                    <!-- X-axis Labels -->
+                    <text x="50" y="215" fill="#667085">1월</text> <text x="100" y="215" fill="#667085">3월</text> <text x="150" y="215" fill="#667085">5월</text> <text x="200" y="215" fill="#667085">7월</text> <text x="250" y="215" fill="#667085">9월</text> <text x="300" y="215" fill="#667085">11월</text>
+                </svg>
+                <div class="chart-caption">그래프 2: 강수량 변화. 9월부터 강수량이 급증하여 11월에 정점을 이룹니다.</div>
+            </div>
+        </div>
+        
+        <div class="page-footer"></div>
+    </div>
+    
+    <!-- =================================================================== -->
+    <!-- 페이지 4: 계절별 분석 및 팁 -->
+    <!-- =================================================================== -->
+    <div class="page">
+        <div class="page-header">
+            <span>나트랑 날씨 분석 리포트</span>
+            <span class="eng-text">Nha Trang Weather Analysis</span>
+        </div>
+        
+        <div class="page-content" style="padding-top: 15mm; padding-bottom: 15mm;">
+            <h2>3. 계절별 특징과 여행 팁</h2>
+            <p>
+                그래프에서 확인한 데이터를 바탕으로 나트랑의 건기와 우기 시즌별 특징을 상세히 분석하고,
+                각 시기에 맞는 여행 팁과 추천 활동을 정리했습니다.
+            </p>
+
+            <h3>건기 (1월 ~ 8월) : 여행의 황금기</h3>
+            <p>
+                연중 가장 여행하기 좋은 시기로, 특히 2월부터 5월까지는 쾌적한 날씨가 이어집니다.
+                평균 28°C 내외의 기온과 낮은 습도로 야외 활동에 부담이 없으며, 맑고 파란 하늘을 자주 볼 수 있습니다.
+                6월부터 8월까지는 기온이 다소 높아지지만, 여전히 여행하기에 좋은 날씨입니다.
+            </p>
+            <div class="callout">
+                <div class="title">추천 활동 및 준비물</div>
+                <p><strong>액티비티:</strong> 스노클링, 스쿠버 다이빙, 호핑 투어, 해변에서의 휴양 등 모든 해양 활동에 최적입니다.</p>
+                <p><strong>준비물:</strong> 가벼운 여름 옷, 수영복, 선크림, 선글라스, 모자. 아침저녁으로 걸칠 얇은 가디건이 유용할 수 있습니다.</p>
+            </div>
+
+            <h3>우기 (9월 ~ 12월) : 실내 활동 위주의 여행</h3>
+            <p>
+                9월부터 본격적으로 비가 시작되며, 10월과 11월에 강수량이 집중됩니다. 하루 종일 비가 내리기보다는
+                짧고 강한 스콜성 비가 자주 내리는 편입니다. 파도가 높아져 일부 해양 액티비티가 제한될 수 있으며,
+                습도가 높아 다소 덥고 꿉꿉하게 느껴질 수 있습니다.
+            </p>
+            <div class="callout">
+                <div class="title">주의사항 및 추천 활동</div>
+                <p><strong>액티비티:</strong> 머드 스파, 마사지, 쿠킹 클래스, 쇼핑몰 방문 등 실내 활동 위주로 계획하는 것이 좋습니다.</p>
+                <p><strong>준비물:</strong> 우산, 우비, 방수가 되는 신발(슬리퍼, 샌들), 모기 기피제. 실내 냉방에 대비한 얇은 외투도 필요합니다.</p>
+            </div>
+        </div>
+        
+        <div class="page-footer"></div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 페이지 5: 종합 데이터 표 -->
+    <!-- =================================================================== -->
+    <div class="page">
+        <div class="page-header">
+            <span>나트랑 날씨 분석 리포트</span>
+            <span class="eng-text">Nha Trang Weather Analysis</span>
+        </div>
+        
+        <div class="page-content" style="padding-top: 15mm; padding-bottom: 15mm;">
+            <h2>4. 월별 날씨 데이터 종합표</h2>
+            <p>
+                나트랑의 연간 날씨 데이터를 월별로 상세하게 정리한 표입니다. 여행 계획 시 특정 월의 날씨를
+                정확하게 파악하는 데 참고 자료로 활용할 수 있습니다.
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="text-center">월</th>
+                        <th class="text-center">최고 기온 (°C)</th>
+                        <th class="text-center">최저 기온 (°C)</th>
+                        <th class="text-center">강수량 (mm)</th>
+                        <th class="text-center">강수일 (일)</th>
+                        <th class="text-center">습도 (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="text-center">1월</td><td class="text-center">27</td><td class="text-center">22</td><td class="text-center">40</td><td class="text-center">9</td><td class="text-center">78</td></tr>
+                    <tr><td class="text-center">2월</td><td class="text-center">28</td><td class="text-center">22</td><td class="text-center">15</td><td class="text-center">5</td><td class="text-center">77</td></tr>
+                    <tr><td class="text-center">3월</td><td class="text-center">30</td><td class="text-center">23</td><td class="text-center">20</td><td class="text-center">4</td><td class="text-center">77</td></tr>
+                    <tr><td class="text-center">4월</td><td class="text-center">32</td><td class="text-center">25</td><td class="text-center">35</td><td class="text-center">5</td><td class="text-center">78</td></tr>
+                    <tr><td class="text-center">5월</td><td class="text-center">33</td><td class="text-center">26</td><td class="text-center">50</td><td class="text-center">9</td><td class="text-center">77</td></tr>
+                    <tr><td class="text-center">6월</td><td class="text-center">34</td><td class="text-center">26</td><td class="text-center">40</td><td class="text-center">8</td><td class="text-center">75</td></tr>
+                    <tr><td class="text-center">7월</td><td class="text-center">33</td><td class="text-center">26</td><td class="text-center">45</td><td class="text-center">9</td><td class="text-center">76</td></tr>
+                    <tr><td class="text-center">8월</td><td class="text-center">33</td><td class="text-center">25</td><td class="text-center">50</td><td class="text-center">10</td><td class="text-center">77</td></tr>
+                    <tr><td class="text-center">9월</td><td class="text-center">31</td><td class="text-center">24</td><td class="text-center">150</td><td class="text-center">15</td><td class="text-center">81</td></tr>
+                    <tr><td class="text-center">10월</td><td class="text-center">29</td><td class="text-center">23</td><td class="text-center">280</td><td class="text-center">19</td><td class="text-center">84</td></tr>
+                    <tr><td class="text-center">11월</td><td class="text-center">28</td><td class="text-center">22</td><td class="text-center">330</td><td class="text-center">20</td><td class="text-center">85</td></tr>
+                    <tr><td class="text-center">12월</td><td class="text-center">27</td><td class="text-center">22</td><td class="text-center">170</td><td class="text-center">16</td><td class="text-center">82</td></tr>
+                </tbody>
+            </table>
+            
+            <h3>결론: 최적의 여행 시기 제안</h3>
+            <p>
+                모든 데이터를 종합했을 때, 나트랑 여행의 최적기는 **2월부터 5월 사이**입니다. 이 시기는 비가 거의 오지 않고,
+                기온과 습도가 적절하여 해양 액티비티와 도시 관광을 모두 즐기기에 가장 이상적인 환경을 제공합니다.
+                만약 무더위를 피하고 싶다면, 비교적 선선한 12월과 1월도 좋은 선택이 될 수 있습니다.
+            </p>
+        </div>
+        
+        <div class="page-footer"></div>
+    </div>
+
+</body>
+</html>

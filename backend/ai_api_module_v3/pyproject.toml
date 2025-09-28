@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-api-module"
+version = "0.1.0"
+description = "Unified interface for multiple AI providers (OpenAI, Anthropic, Google, xAI)"
+readme = "README.md"
+authors = [{ name = "AI Team", email = "team@example.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "pillow>=9.0.0",
+    "asyncio-throttle>=1.0.0",
+    "tenacity>=8.0.0",
+    "tiktoken>=0.4.0",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.35.0"]
+anthropic = ["anthropic>=0.31.0"] 
+google = ["google-genai>=0.6.0"]
+xai = ["xai-sdk>=0.2.0"]
+all = [
+    "ai-api-module[openai,anthropic,google,xai]",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/ai-api-module"
+Documentation = "https://ai-api-module.readthedocs.io"
+Repository = "https://github.com/your-org/ai-api-module"
+
+[tool.setuptools]
+packages = ["ai_api_module"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
