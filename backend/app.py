@@ -33,11 +33,14 @@ sys.path.insert(0, str(ai_module_path))
 
 try:
     from ai_api_module import AI
+    AI_AVAILABLE = True
+    print("✅ AI API 모듈 로드 성공")
 except ImportError as e:
-    print(f"❌ AI API 모듈을 찾을 수 없습니다: {e}")
+    print(f"⚠️ AI API 모듈을 찾을 수 없습니다: {e}")
     print(f"확인한 경로: {ai_module_path}")
-    print("AI API 모듈 없이 실행합니다.")
+    print("🔄 AI API 모듈 없이 기본 서버로 실행합니다.")
     AI = None
+    AI_AVAILABLE = False
 
 # 기존 HTML 디자이너 클래스 가져오기
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -247,7 +250,12 @@ def internal_error(e):
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """헬스 체크"""
-    return jsonify({'ok': True, 'timestamp': datetime.now().isoformat()})
+    return jsonify({
+        'ok': True, 
+        'timestamp': datetime.now().isoformat(),
+        'ai_available': AI_AVAILABLE,
+        'status': 'ready' if AI_AVAILABLE else 'limited'
+    })
 
 @app.route('/api/convert', methods=['POST'])
 @limiter.limit("3 per minute")

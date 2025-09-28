@@ -1,0 +1,7 @@
+# 최소 핵심 의존성만 (빠른 빌드용)
+Flask==3.0.0
+flask-cors==4.0.0
+flask-limiter==3.5.0
+gunicorn==21.2.0
+requests==2.31.0
+python-dotenv==1.0.0
