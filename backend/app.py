@@ -54,6 +54,7 @@ except ImportError as e:
 # Flask 앱 초기화
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB 제한
+app.url_map.strict_slashes = False  # /api/convert 와 /api/convert/ 모두 허용
 
 # CORS 설정
 CORS(app, origins=["*"])  # 프로덕션에서는 특정 도메인으로 제한
@@ -287,6 +288,8 @@ def health_check():
 @app.route('/<path:path>')
 def static_assets(path):
     try:
+        if path.startswith('api/'):
+            abort(404)
         candidate = FRONT_DIR / path
         if FRONT_DIR.exists() and candidate.exists() and candidate.is_file():
             return send_from_directory(str(FRONT_DIR), path)
@@ -297,11 +300,14 @@ def static_assets(path):
         return send_from_directory(str(FRONT_DIR), 'index.html')
     abort(404)
 
-@app.route('/api/convert', methods=['POST'])
+@app.route('/api/convert', methods=['POST', 'OPTIONS'])
 @limiter.limit("3 per minute")
 def convert_files():
     """파일들을 HTML로 변환 후 PDF 생성"""
     try:
+        if request.method == 'OPTIONS':
+            # Preflight 응답
+            return ("", 204)
         # 프롬프트 가져오기
         prompt = request.form.get('prompt', '').strip()
         if not prompt:

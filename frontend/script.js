@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   // 배포 후 백엔드 URL로 교체하세요. 예: https://your-backend.onrender.com
   const API_BASE = window.location.hostname === 'localhost' 
       ? 'http://localhost:5000' 
-      : 'https://your-backend.onrender.com';
+      : 'https://htmldesignersite.onrender.com';
 
   // ====== Elements ======
   const promptEl   = document.getElementById('prompt');
