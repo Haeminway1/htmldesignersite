@@ -23,4 +23,4 @@ anthropic>=0.7.0
 python-dotenv>=1.0.0
 PyYAML>=6.0.2
 
--e ./backend/ai_api_module_v3
+-e ./ai_api_module_v3
