@@ -8,15 +8,30 @@ echo "📁 현재 디렉토리: $(pwd)"
 echo "📋 파일 목록:"
 ls -la
 
-# Python 의존성 설치
-echo "📦 Python 의존성 설치 중..."
+# backend 디렉토리로 이동 (Root Directory가 backend/로 설정되어 있어야 함)
+echo "📁 작업 디렉토리 확인..."
 if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
-    echo "✅ requirements.txt 설치 완료"
+    echo "✅ requirements.txt 발견: $(pwd)/requirements.txt"
+elif [ -f "backend/requirements.txt" ]; then
+    echo "📁 backend 디렉토리로 이동..."
+    cd backend
+    echo "📁 새 작업 디렉토리: $(pwd)"
+    ls -la
+elif [ -f "../requirements.txt" ]; then
+    echo "📁 상위 디렉토리에서 requirements.txt 발견"
+    cd ..
+    echo "📁 새 작업 디렉토리: $(pwd)"
 else
-    echo "❌ requirements.txt 파일을 찾을 수 없습니다"
+    echo "❌ requirements.txt를 찾을 수 없습니다"
+    echo "📋 전체 구조 확인:"
+    find . -name "requirements.txt" -type f 2>/dev/null || echo "requirements.txt 파일이 없습니다"
     exit 1
 fi
+
+# Python 의존성 설치
+echo "📦 Python 의존성 설치 중..."
+pip install -r requirements.txt
+echo "✅ requirements.txt 설치 완료"
 
 # wkhtmltopdf 다운로드 (선택적)
 echo "📥 wkhtmltopdf 다운로드 중..."
