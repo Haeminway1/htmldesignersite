@@ -88,7 +88,7 @@ PDF_CACHE_DURATION = timedelta(hours=24)
 ALLOWED_EXTENSIONS = {
     '.pdf', '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt',
     '.txt', '.md', '.csv', '.json', '.xml', '.html', '.htm',
-    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp',
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.avif', '.heic', '.heif', '.svg',
     '.epub', '.zip'
 }
 
@@ -316,13 +316,8 @@ def convert_files():
                 'code': 'MISSING_PROMPT'
             }), 400
         
-        # 파일들 가져오기
+        # 파일들 가져오기 (선택사항)
         files = request.files.getlist('files')
-        if not files:
-            return jsonify({
-                'error': '최소 1개의 파일을 업로드해주세요.',
-                'code': 'MISSING_FILES'
-            }), 400
         
         # 파일 검증 및 데이터 수집
         uploaded_files = []
@@ -354,14 +349,10 @@ def convert_files():
                 'size': file_size
             })
         
-        if not uploaded_files:
-            return jsonify({
-                'error': '유효한 파일이 없습니다.',
-                'code': 'NO_VALID_FILES'
-            }), 400
+        # 파일이 하나도 없어도 진행 (텍스트 프롬프트만으로 생성)
         
         # 캐시 체크
-        files_content = [f['content'].decode('utf-8', errors='ignore') for f in uploaded_files]
+        files_content = [f['content'].decode('utf-8', errors='ignore') for f in uploaded_files] if uploaded_files else []
         content_hash = generate_content_hash(prompt, files_content)
         
         if content_hash in PDF_CACHE:
@@ -375,9 +366,19 @@ def convert_files():
                         'cached': True
                     })
         
-        # HTML 생성
+        # HTML 생성 (파일 유무에 따라 분기)
         web_designer = get_designer()
-        result = web_designer.generate_html_from_files(prompt, uploaded_files)
+        if uploaded_files:
+            result = web_designer.generate_html_from_files(prompt, uploaded_files)
+        else:
+            # 파일 없이 생성: 기존 config의 입력 디렉토리를 건드리지 않고 프롬프트만 사용
+            original_config = web_designer.designer.config.copy()
+            try:
+                web_designer.designer.config['prompts']['user_prompt'] = prompt
+                html, meta = web_designer.designer.generate_html()
+                result = { 'success': True, 'html': html, 'metadata': meta }
+            finally:
+                web_designer.designer.config = original_config
         
         if not result['success']:
             return jsonify({
