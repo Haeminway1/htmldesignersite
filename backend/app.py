@@ -17,7 +17,7 @@ from typing import Dict, Any, Optional
 import hashlib
 import mimetypes
 
-from flask import Flask, request, jsonify, send_file, abort
+from flask import Flask, request, jsonify, send_file, send_from_directory, abort
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -75,6 +75,9 @@ logger = logging.getLogger(__name__)
 # 전역 변수
 TEMP_DIR = Path(tempfile.gettempdir()) / "html_designer"
 TEMP_DIR.mkdir(exist_ok=True)
+
+# 프런트엔드 정적 파일 디렉토리 (존재 시 사용)
+FRONT_DIR = (Path(__file__).parent.parent / "frontend").resolve()
 
 # PDF 파일 저장 및 캐시
 PDF_CACHE = {}  # {hash: {"path": str, "created": datetime}}
@@ -230,6 +233,29 @@ def before_request():
     """요청 전 처리"""
     cleanup_temp_files()
 
+@app.route('/', methods=['GET', 'HEAD'])
+def root_index():
+    """루트 경로: 프런트엔드 index.html 서빙 또는 상태 JSON"""
+    if request.method == 'HEAD':
+        return ("", 200)
+    try:
+        if FRONT_DIR.exists() and (FRONT_DIR / 'index.html').exists():
+            return send_from_directory(str(FRONT_DIR), 'index.html')
+    except Exception:
+        pass
+    return jsonify(status="ok", message="Backend is running"), 200
+
+@app.route('/favicon.ico', methods=['GET'])
+def favicon():
+    """파비콘: 있으면 서빙, 없으면 204"""
+    try:
+        fav = FRONT_DIR / 'favicon.ico'
+        if fav.exists():
+            return send_from_directory(str(FRONT_DIR), 'favicon.ico')
+    except Exception:
+        pass
+    return ("", 204)
+
 @app.errorhandler(413)
 def too_large(e):
     """파일 크기 초과 에러 처리"""
@@ -256,6 +282,20 @@ def health_check():
         'ai_available': AI_AVAILABLE,
         'status': 'ready' if AI_AVAILABLE else 'limited'
     })
+
+# 정적 파일 서빙 (프런트 자산)
+@app.route('/<path:path>')
+def static_assets(path):
+    try:
+        candidate = FRONT_DIR / path
+        if FRONT_DIR.exists() and candidate.exists() and candidate.is_file():
+            return send_from_directory(str(FRONT_DIR), path)
+    except Exception:
+        pass
+    # SPA 라우팅 호환: 알 수 없는 경로는 index.html로 폴백
+    if FRONT_DIR.exists() and (FRONT_DIR / 'index.html').exists():
+        return send_from_directory(str(FRONT_DIR), 'index.html')
+    abort(404)
 
 @app.route('/api/convert', methods=['POST'])
 @limiter.limit("3 per minute")
