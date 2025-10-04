@@ -5,19 +5,19 @@ aliases:
   smart: gpt-5
   fast: gpt-5-mini
   cheap: gpt-4.1-nano
-  creative: claude-3-7-sonnet-20250219
+  creative: claude-sonnet-4-5
   
   # Provider shortcuts
   gpt: gpt-5
-  claude: claude-3-7-sonnet-20250219
+  claude: claude-sonnet-4-5
   gemini: gemini-2.5-pro
   grok: grok-4
   
   # Task-specific
   coding: grok-code-fast-1
-  analysis: claude-opus-4-20250514
+  analysis: claude-sonnet-4-5
   research: o3-deep-research
-  vision: claude-3-7-sonnet-20250219
+  vision: claude-sonnet-4-5
   
   # Image generation
   image: gpt-image-1
