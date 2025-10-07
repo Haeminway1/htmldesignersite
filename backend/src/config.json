@@ -1,6 +1,6 @@
 {
     "ai_settings": {
-        "model": "gemini-2.5-pro",
+        "model": "gemini-2.5-flash",
         "temperature": 0.7,
         "reference": ["guideline/guideline.md", "guideline/basic_structure.html"]
     },
@@ -18,8 +18,8 @@
             ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp",
             ".epub", ".zip"
         ],
-        "max_file_size_mb": 10,
-        "max_files_per_request": 20
+        "max_file_size_mb": 5,
+        "max_files_per_request": 10
     },
     "output": {
         "output_directory": "worktable"
