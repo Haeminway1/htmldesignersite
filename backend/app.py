@@ -509,6 +509,7 @@ def convert_files():
         return jsonify({
             'success': True,
             'pdf_url': f'/api/file/{content_hash}.pdf',
+            'html': result['html'],  # HTML도 함께 반환
             'metadata': result['metadata'],
             'cached': False
         })

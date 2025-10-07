@@ -16,8 +16,23 @@ document.addEventListener('DOMContentLoaded', async function () {
   const statusEl   = document.getElementById('status');
   const loadingOverlay = document.getElementById('loadingOverlay');
   const yearEl     = document.getElementById('year');
+  const resultModal = document.getElementById('resultModal');
+  const modalPreviewBtn = document.getElementById('modalPreviewBtn');
+  const modalPdfBtn = document.getElementById('modalPdfBtn');
+  const modalHtmlBtn = document.getElementById('modalHtmlBtn');
+  const modalEditBtn = document.getElementById('modalEditBtn');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
 
   if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // 현재 생성된 결과 저장
+  let currentResult = {
+    html: '',
+    url: '',
+    type: '', // 'pdf' or 'html'
+    filename: '',
+    originalPrompt: ''
+  };
 
   // ====== Guard: 필수 요소 점검 ======
   const required = [
@@ -55,21 +70,19 @@ document.addEventListener('DOMContentLoaded', async function () {
       return; 
     }
     let html = `
-      <div class="mt-4">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-sm font-semibold text-slate-700">첨부 파일 (${files.length}개)</span>
-          <button onclick="event.stopPropagation(); event.preventDefault(); clearAllFiles()" class="text-xs text-red-600 hover:text-red-700 font-medium transition-colors">
-            전체 제거
-          </button>
-        </div>
-        <div class="space-y-2">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-semibold text-slate-700">첨부 파일 (${files.length}개)</span>
+        <button onclick="event.stopPropagation(); event.preventDefault(); clearAllFiles()" class="text-xs text-red-600 hover:text-red-700 font-medium transition-colors">
+          전체 제거
+        </button>
+      </div>
+      <div class="space-y-2">
     `;
     Array.from(files).forEach((f, index) => {
       const fileName = f.name.length > 30 ? f.name.substring(0, 30) + '...' : f.name;
       html += `
         <div class="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl border border-slate-200">
           <div class="flex items-center gap-3">
-            <span class="text-lg">${getFileIcon(f.name)}</span>
             <span class="text-sm font-medium text-slate-900">${fileName}</span>
             <span class="text-xs text-slate-500">(${(f.size/1024/1024).toFixed(2)} MB)</span>
           </div>
@@ -77,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         </div>
       `;
     });
-    html += '</div></div>';
+    html += '</div>';
     fileList.innerHTML = html;
   }
 
@@ -114,6 +127,104 @@ document.addEventListener('DOMContentLoaded', async function () {
       return;
     }
     fileInput.click();
+  });
+
+  // ====== Result Modal Functions ======
+  function showResultModal(html, url, type, filename = '') {
+    currentResult = {
+      html: html,
+      url: url,
+      type: type,
+      filename: filename || `handout_${new Date().toISOString().slice(0,10)}.${type === 'pdf' ? 'pdf' : 'html'}`,
+      originalPrompt: promptEl.value
+    };
+
+    // PDF 버튼 표시/숨김
+    if (type === 'pdf') {
+      modalPdfBtn.classList.remove('hidden');
+    } else {
+      modalPdfBtn.classList.add('hidden');
+    }
+
+    resultModal.classList.remove('hidden');
+    resultModal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideResultModal() {
+    resultModal.classList.add('hidden');
+    resultModal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+
+  // 모달 버튼 이벤트
+  modalPreviewBtn.addEventListener('click', () => {
+    if (currentResult.type === 'pdf') {
+      window.open(currentResult.url, '_blank');
+    } else {
+      window.open(currentResult.url, '_blank');
+    }
+  });
+
+  modalPdfBtn.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = currentResult.url;
+    a.download = currentResult.filename;
+    a.click();
+  });
+
+  modalHtmlBtn.addEventListener('click', () => {
+    const blob = new Blob([currentResult.html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentResult.filename.replace('.pdf', '.html');
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  modalEditBtn.addEventListener('click', () => {
+    // 프롬프트를 .md 파일로 추가
+    const promptBlob = new Blob([currentResult.originalPrompt], { type: 'text/markdown;charset=utf-8' });
+    const promptFile = new File([promptBlob], 'prompt.md', { type: 'text/markdown' });
+
+    // 결과물을 .html 파일로 추가
+    const htmlBlob = new Blob([currentResult.html], { type: 'text/html;charset=utf-8' });
+    const htmlFile = new File([htmlBlob], 'result.html', { type: 'text/html' });
+
+    // DataTransfer로 파일 추가
+    const dt = new DataTransfer();
+    
+    // 기존 파일들 먼저 추가
+    if (fileInput.files) {
+      Array.from(fileInput.files).forEach(file => dt.items.add(file));
+    }
+    
+    // 새 파일들 추가
+    dt.items.add(promptFile);
+    dt.items.add(htmlFile);
+    
+    fileInput.files = dt.files;
+    refreshFileList(fileInput.files);
+
+    // 프롬프트 창 비우기
+    promptEl.value = '';
+    autoGrow(promptEl);
+
+    // 모달 닫기
+    hideResultModal();
+
+    // 상태 메시지 업데이트
+    statusEl.textContent = '이전 결과물이 추가되었습니다. 수정 사항을 입력하고 다시 생성하세요.';
+  });
+
+  modalCloseBtn.addEventListener('click', hideResultModal);
+
+  // 모달 배경 클릭 시 닫기
+  resultModal.addEventListener('click', (e) => {
+    if (e.target === resultModal) {
+      hideResultModal();
+    }
   });
   dropzone.addEventListener('dragover', (e) => { 
     e.preventDefault(); 
@@ -165,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // === Loading ON ===
     setLoading(true);
-    statusEl.textContent = '생성 중… 잠시만 기다려 주세요';
+    statusEl.textContent = '';
 
     try {
       const fd = new FormData();
@@ -184,78 +295,19 @@ document.addEventListener('DOMContentLoaded', async function () {
         // PDF 생성 성공
         const pdfUrl = `${API_BASE}${j.pdf_url}`;
         
-        // PDF 새 창에서 자동 열기
-        window.open(pdfUrl, '_blank');
+        // HTML 가져오기 (없으면 빈 문자열)
+        const htmlContent = j.html || '';
         
-        statusEl.innerHTML = `
-          <div class="space-y-4">
-            <p class="text-lg font-semibold text-slate-900">✨ 생성 완료!</p>
-            <div class="flex flex-wrap gap-3">
-              <a class="btn-toss inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-semibold shadow-md transition-all" 
-                 href="${pdfUrl}" 
-                 target="_blank" 
-                 rel="noopener">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-                새 창에서 열기
-              </a>
-              <a class="btn-toss inline-flex items-center gap-2 px-5 py-3 bg-white text-slate-900 border-2 border-slate-900 rounded-xl hover:bg-slate-50 font-semibold transition-all" 
-                 href="${pdfUrl}" 
-                 download>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-                PDF 다운로드
-              </a>
-            </div>
-          </div>
-        `;
+        // 생성 완료 팝업 표시
+        showResultModal(htmlContent, pdfUrl, 'pdf');
       } else if (j && j.html) {
         // PDF 변환 실패, HTML만 제공
         const blob = new Blob([j.html], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const filename = `handout_${new Date().toISOString().slice(0,10)}.html`;
         
-        // HTML을 새 창에서 자동으로 열기
-        const previewWindow = window.open(url, '_blank');
-        if (previewWindow) {
-          previewWindow.document.title = filename;
-        }
-        
-        statusEl.innerHTML = `
-          <div class="space-y-4">
-            <p class="text-lg font-semibold text-slate-900">✨ 생성 완료!</p>
-            <div class="flex flex-wrap gap-3">
-              <a class="btn-toss inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-semibold shadow-md transition-all" 
-                 href="${url}" 
-                 target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-                새 창에서 열기
-              </a>
-              <a class="btn-toss inline-flex items-center gap-2 px-5 py-3 bg-white text-slate-900 border-2 border-slate-900 rounded-xl hover:bg-slate-50 font-semibold transition-all" 
-                 href="${url}" 
-                 download="${filename}">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 0L7.5 4.5m.75 0l-.75.75M7.5 4.5v12m6-6l3 3m0 0l3-3m-3 3v-6" />
-                </svg>
-                HTML 다운로드
-              </a>
-              <button class="btn-toss inline-flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-md transition-all" 
-                      onclick="window.print()">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
-                </svg>
-                PDF로 저장
-              </button>
-            </div>
-            <p class="text-sm text-slate-600">
-              💡 "PDF로 저장" 버튼을 눌러 브라우저에서 직접 PDF로 변환할 수 있습니다
-            </p>
-          </div>
-        `;
+        // 생성 완료 팝업 표시
+        showResultModal(j.html, url, 'html', filename);
       } else {
         statusEl.textContent = 'PDF 링크를 받지 못했습니다.';
       }
