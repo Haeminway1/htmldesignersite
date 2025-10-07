@@ -23,7 +23,18 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-import pdfkit
+
+# PDF 변환 라이브러리 임포트 (우선순위: weasyprint > pdfkit)
+PDF_BACKEND = None
+try:
+    from weasyprint import HTML as WeasyHTML
+    PDF_BACKEND = 'weasyprint'
+except ImportError:
+    try:
+        import pdfkit
+        PDF_BACKEND = 'pdfkit'
+    except ImportError:
+        pass
 
 # AI API 모듈 가져오기
 ai_module_paths = [
@@ -94,6 +105,14 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# PDF 백엔드 로깅
+if PDF_BACKEND == 'weasyprint':
+    logger.info("✅ WeasyPrint 사용 (PDF 변환)")
+elif PDF_BACKEND == 'pdfkit':
+    logger.info("⚠️ pdfkit 사용 (wkhtmltopdf 필요)")
+else:
+    logger.warning("⚠️ PDF 변환 라이브러리가 없습니다. HTML만 반환됩니다.")
 
 # 전역 변수
 TEMP_DIR = Path(tempfile.gettempdir()) / "html_designer"
@@ -229,28 +248,41 @@ class WebHTMLDesigner:
             }
     
     def html_to_pdf(self, html_content: str) -> Optional[str]:
-        """HTML을 PDF로 변환"""
+        """HTML을 PDF로 변환 (weasyprint 또는 pdfkit 사용)"""
+        global PDF_BACKEND
+        
         try:
             # PDF 파일 경로 생성
             pdf_filename = f"output_{uuid.uuid4().hex}.pdf"
             pdf_path = TEMP_DIR / pdf_filename
             
-            # wkhtmltopdf 설정
-            config = pdfkit.configuration(wkhtmltopdf=self.wkhtmltopdf_path)
-            
-            # HTML을 PDF로 변환
-            pdfkit.from_string(
-                html_content, 
-                str(pdf_path), 
-                options=self.pdf_options,
-                configuration=config
-            )
-            
-            logger.info(f"PDF 생성 완료: {pdf_path}")
-            return str(pdf_path)
+            if PDF_BACKEND == 'weasyprint':
+                # WeasyPrint 사용 (권장)
+                from weasyprint import HTML as WeasyHTML
+                WeasyHTML(string=html_content, base_url='.').write_pdf(str(pdf_path))
+                logger.info(f"✅ PDF 생성 완료 (WeasyPrint): {pdf_path}")
+                return str(pdf_path)
+                
+            elif PDF_BACKEND == 'pdfkit':
+                # pdfkit 사용 (wkhtmltopdf 필요)
+                import pdfkit
+                config = pdfkit.configuration(wkhtmltopdf=self.wkhtmltopdf_path)
+                pdfkit.from_string(
+                    html_content, 
+                    str(pdf_path), 
+                    options=self.pdf_options,
+                    configuration=config
+                )
+                logger.info(f"✅ PDF 생성 완료 (pdfkit): {pdf_path}")
+                return str(pdf_path)
+            else:
+                logger.warning("PDF 변환 라이브러리가 설치되지 않았습니다")
+                return None
             
         except Exception as e:
-            logger.error(f"PDF 변환 실패: {e}")
+            logger.error(f"❌ PDF 변환 실패: {e}")
+            import traceback
+            logger.error(f"상세 오류: {traceback.format_exc()}")
             return None
 
 # 전역 디자이너 인스턴스

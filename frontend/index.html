@@ -3,24 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>유인물 생성기 · MVP</title>
+  <title>Extravagant · AI 유인물 디자인</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root { color-scheme: light dark; }
     html, body { height: 100%; }
-    body { font-family: "Pretendard", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial, sans-serif; }
+    body { font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; }
+    /* Toss-like typography */
+    .logo-text {
+      font-family: "Pretendard", sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
     /* Textarea auto-grow cap */
     textarea.auto-grow { max-height: 16rem; overflow-y: auto; }
-    .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-    .glass { background: rgba(255,255,255,0.65); backdrop-filter: saturate(150%) blur(6px); }
-    @media (prefers-color-scheme: dark) {
-      .glass { background: rgba(17, 24, 39, 0.6); }
-    }
-    .badge-pass{color:#065f46;background:#d1fae5;border:1px solid #10b981;border-radius:.5rem;padding:.1rem .5rem;font-size:.75rem}
-    .badge-fail{color:#7f1d1d;background:#fee2e2;border:1px solid #ef4444;border-radius:.5rem;padding:.1rem .5rem;font-size:.75rem}
+    .shadow-soft { box-shadow: 0 2px 20px rgba(0,0,0,0.06); }
+    .shadow-toss { box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.08); }
     /* Loading motion */
     @keyframes dots {
       0% { content: ''; }
@@ -35,77 +36,91 @@
       100% { transform: translateX(100%); }
     }
     .loading-bar::before{
-      content:""; display:block; height:100%; width:40%; background:rgba(0,0,0,.2);
+      content:""; display:block; height:100%; width:40%; background:rgba(0,0,0,.15);
       animation: bar 1.2s linear infinite;
     }
+    /* Toss-like button hover */
+    .btn-toss {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-toss:hover {
+      transform: translateY(-1px);
+    }
+    .btn-toss:active {
+      transform: translateY(0);
+    }
   </style>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4799178225000223"
+  crossorigin="anonymous"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100">
+<body class="min-h-screen bg-slate-50 text-slate-900">
   <!-- Header -->
-  <header class="sticky top-0 z-10 backdrop-blur border-b border-slate-200/60 dark:border-slate-800/80 bg-white/50 dark:bg-slate-900/40">
-    <div class="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="h-7 w-7 rounded-xl bg-slate-900 dark:bg-white"></div>
-        <span class="font-semibold tracking-tight">유인물 생성기</span>
+  <header class="sticky top-0 z-10 backdrop-blur-sm border-b border-slate-200 bg-white/80">
+    <div class="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="logo-text text-2xl text-slate-900">Extravagant</span>
       </div>
-      <nav class="text-sm text-slate-500 dark:text-slate-400">
-        <a href="#" class="hover:text-slate-900 dark:hover:text-slate-200">가이드</a>
+      <nav class="text-sm text-slate-600">
+        <a href="#" class="hover:text-slate-900 transition-colors">가이드</a>
       </nav>
     </div>
   </header>
 
   <!-- Main -->
-  <main class="mx-auto max-w-3xl px-4 pt-16 pb-10">
-    <section class="mt-24 md:mt-32 mb-8 text-center">
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-3">프롬프트로 A4 PDF 유인물 만들기</h1>
-      <p class="text-slate-600 dark:text-slate-400">
-        중앙 입력창에 프롬프트를 적고, 파일을 드래그&드롭한 뒤 <span class="font-medium">생성</span> 버튼을 누르세요.
+  <main class="mx-auto max-w-4xl px-6 pt-20 pb-16">
+    <section class="mb-12 text-center">
+      <h1 class="text-5xl md:text-6xl font-bold tracking-tight mb-5 text-slate-900">유인물 디자인하기</h1>
+      <p class="text-lg text-slate-600 font-medium">
+        프롬프트를 입력하고 파일을 추가한 후, <span class="text-slate-900">생성</span> 버튼을 눌러보세요
       </p>
     </section>
 
-    <!-- ChatGPT-like composer card -->
-    <section class="relative mt-2 md:mt-3 glass shadow-soft rounded-2xl border border-slate-200/70 dark:border-slate-700/60 p-4 md:p-6">
+    <!-- Composer card -->
+    <section class="relative bg-white rounded-3xl shadow-toss border border-slate-200 p-6 md:p-8">
       <!-- Prompt textarea -->
       <label for="prompt" class="sr-only">프롬프트</label>
       <div class="relative">
-        <textarea id="prompt" class="auto-grow w-full resize-none rounded-xl border border-slate-300/70 dark:border-slate-700 bg-white/80 dark:bg-slate-800/60 focus:outline-none focus:ring-2 focus:ring-slate-400/60 dark:focus:ring-slate-500/60 p-4 pr-24 text-[15px] leading-6 placeholder:text-slate-400"
-          rows="4" placeholder="예) 고1 영어 문법 유인물: 수동태 핵심 정리 + 예문 10개, 마지막 페이지는 퀴즈 5문항으로 구성…"></textarea>
-        <div class="absolute right-2 bottom-2 flex items-center gap-2">
-          <button id="generateBtn" class="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed">생성</button>
+        <textarea id="prompt" class="auto-grow w-full resize-none rounded-2xl border-2 border-slate-200 bg-white focus:outline-none focus:border-slate-900 p-5 pr-28 text-base leading-relaxed placeholder:text-slate-400 transition-colors"
+          rows="4" placeholder="예) 고1 영어 문법 유인물: 수동态 핵심 정리 + 예문 10개, 마지막 페이지는 퀴즈 5문항으로 구성…"></textarea>
+        <div class="absolute right-3 bottom-3 flex items-center gap-2">
+          <button id="generateBtn" class="btn-toss px-6 py-3 text-base font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md">생성하기</button>
         </div>
       </div>
 
       <!-- Loading Overlay -->
-      <div id="loadingOverlay" class="hidden absolute inset-0 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-700 dark:text-slate-200">
-        <div class="animate-spin h-6 w-6 rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white"></div>
-        <div class="mt-3 text-sm font-medium">생성 중<span class="dots"></span></div>
-        <div class="mt-3 h-1 w-3/4 rounded bg-slate-200/80 dark:bg-slate-700/80 overflow-hidden"><div class="loading-bar h-full"></div></div>
+      <div id="loadingOverlay" class="hidden absolute inset-0 rounded-3xl bg-white/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-900">
+        <div class="animate-spin h-8 w-8 rounded-full border-3 border-slate-200 border-t-slate-900"></div>
+        <div class="mt-4 text-base font-semibold">생성 중<span class="dots"></span></div>
+        <div class="mt-4 h-1.5 w-3/4 max-w-xs rounded-full bg-slate-100 overflow-hidden"><div class="loading-bar h-full"></div></div>
       </div>
 
       <!-- Dropzone -->
-      <div id="dropzone" class="mt-4 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300/80 dark:border-slate-700/80 p-6 text-center cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-slate-500">
+      <div id="dropzone" class="mt-6 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-slate-400">
           <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v9.69l2.47-2.47a.75.75 0 111.06 1.06l-3.75 3.75a.75.75 0 01-1.06 0l-3.75-3.75a.75.75 0 111.06-1.06l2.47 2.47V3a.75.75 0 01.75-.75zM3.75 15a.75.75 0 01.75.75v2.25A2.25 2.25 0 006.75 20.25h10.5A2.25 2.25 0 0019.5 18v-2.25a.75.75 0 011.5 0V18a3.75 3.75 0 01-3.75 3.75H6.75A3.75 3.75 0 013 18v-2.25A.75.75 0 013.75 15z" clip-rule="evenodd" />
         </svg>
-        <p class="text-sm text-slate-600 dark:text-slate-400">
-          파일을 여기에 <span class="font-medium">드래그&드롭</span>하거나 클릭해서 선택하세요 (여러 개 가능)
+        <p class="text-base text-slate-600 font-medium">
+          파일을 드래그하거나 클릭해서 선택하세요
+        </p>
+        <p class="text-sm text-slate-500">
+          여러 개 파일 추가 가능 · 최대 5MB
         </p>
         <input id="fileInput" type="file" class="hidden" multiple />
-        <div id="fileList" class="mt-2 w-full text-left text-sm text-slate-600 dark:text-slate-300"></div>
+        <div id="fileList" class="mt-4 w-full text-left"></div>
       </div>
 
       <!-- Status & Result -->
-      <div class="mt-4 flex items-start gap-3">
-        <div id="spinner" class="hidden animate-spin h-5 w-5 rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-700 dark:border-t-white"></div>
-        <div id="status" class="text-sm text-slate-600 dark:text-slate-400" aria-live="polite"></div>
+      <div class="mt-6 flex items-start gap-3">
+        <div id="spinner" class="hidden animate-spin h-5 w-5 rounded-full border-2 border-slate-200 border-t-slate-900"></div>
+        <div id="status" class="text-base text-slate-700" aria-live="polite"></div>
       </div>
 
     </section>
   </main>
 
   <!-- Footer -->
-  <footer class="mt-16 py-8 text-center text-xs text-slate-500">
-    © <span id="year"></span> 유인물 생성기. All rights reserved.
+  <footer class="mt-20 py-10 text-center text-sm text-slate-500">
+    © <span id="year"></span> Extravagant. All rights reserved.
   </footer>
 
   <script src="script.js"></script>

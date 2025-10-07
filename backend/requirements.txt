@@ -11,6 +11,7 @@ gunicorn>=21.2.0
 
 # PDF 변환 (선택적)
 pdfkit>=1.0.0
+weasyprint>=60.0
 
 # HTTP 클라이언트
 requests>=2.31.0
