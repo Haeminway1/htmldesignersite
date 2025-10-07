@@ -377,6 +377,7 @@ def convert_files():
         
         # 파일들 가져오기 (선택사항)
         files = request.files.getlist('files')
+        logger.info(f"📎 요청에서 받은 파일 수: {len(files)}")
         
         # 파일 검증 및 데이터 수집
         uploaded_files = []
@@ -385,6 +386,7 @@ def convert_files():
         for file in files:
             if file.filename == '':
                 continue
+            logger.info(f"📄 파일 처리 중: {file.filename}")
                 
             if not is_allowed_file(file.filename):
                 return jsonify({
@@ -408,6 +410,9 @@ def convert_files():
                 'content': file_content,
                 'size': file_size
             })
+            logger.info(f"✅ 파일 추가됨: {file.filename} ({file_size / 1024:.2f} KB)")
+        
+        logger.info(f"📊 총 {len(uploaded_files)}개 파일 준비 완료 (총 {total_size / 1024 / 1024:.2f} MB)")
         
         # 파일이 하나도 없어도 진행 (텍스트 프롬프트만으로 생성)
         

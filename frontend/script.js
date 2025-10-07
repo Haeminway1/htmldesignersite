@@ -54,7 +54,16 @@ document.addEventListener('DOMContentLoaded', async function () {
       fileList.innerHTML = ''; 
       return; 
     }
-    let html = '<div class="mt-3 space-y-2">';
+    let html = `
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-600">첨부 파일 (${files.length}개)</span>
+          <button onclick="clearAllFiles()" class="text-xs text-red-500 hover:text-red-700 underline">
+            전체 제거
+          </button>
+        </div>
+        <div class="space-y-2">
+    `;
     Array.from(files).forEach((f, index) => {
       const fileName = f.name.length > 30 ? f.name.substring(0, 30) + '...' : f.name;
       html += `
@@ -64,11 +73,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             <span class="text-sm font-medium">${fileName}</span>
             <span class="text-xs text-slate-400">(${(f.size/1024/1024).toFixed(2)} MB)</span>
           </div>
-          <button onclick="removeFile(${index})" class="text-slate-400 hover:text-red-500 text-sm">×</button>
+          <button onclick="removeFile(${index})" class="text-slate-400 hover:text-red-500 text-lg px-2">×</button>
         </div>
       `;
     });
-    html += '</div>';
+    html += '</div></div>';
     fileList.innerHTML = html;
   }
 
@@ -93,6 +102,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     refreshFileList(fileInput.files);
   };
 
+  // 전체 파일 제거 함수
+  window.clearAllFiles = function() {
+    fileInput.value = '';
+    refreshFileList(null);
+  };
+
   dropzone.addEventListener('click', () => fileInput.click());
   dropzone.addEventListener('dragover', (e) => { 
     e.preventDefault(); 
@@ -105,11 +120,34 @@ document.addEventListener('DOMContentLoaded', async function () {
     e.preventDefault();
     dropzone.classList.remove('ring-2','ring-slate-400');
     if (e.dataTransfer.files && e.dataTransfer.files.length) {
-      fileInput.files = e.dataTransfer.files;
+      // 기존 파일에 새 파일 추가 (대체가 아닌 추가)
+      const dt = new DataTransfer();
+      // 기존 파일들 먼저 추가
+      if (fileInput.files) {
+        Array.from(fileInput.files).forEach(file => dt.items.add(file));
+      }
+      // 새 파일들 추가
+      Array.from(e.dataTransfer.files).forEach(file => dt.items.add(file));
+      fileInput.files = dt.files;
       refreshFileList(fileInput.files);
     }
   });
-  fileInput.addEventListener('change', () => refreshFileList(fileInput.files));
+  fileInput.addEventListener('change', (e) => {
+    // 파일 선택 시에도 기존 파일에 추가
+    if (e.target.files && e.target.files.length) {
+      const dt = new DataTransfer();
+      // 기존 파일들 먼저 추가
+      const existingFiles = Array.from(fileInput.files || []);
+      const newFiles = Array.from(e.target.files);
+      // 중복 제거: 같은 이름의 파일은 새 파일로 대체
+      const fileMap = new Map();
+      existingFiles.forEach(f => fileMap.set(f.name, f));
+      newFiles.forEach(f => fileMap.set(f.name, f));
+      fileMap.forEach(file => dt.items.add(file));
+      fileInput.files = dt.files;
+      refreshFileList(fileInput.files);
+    }
+  });
 
   // ====== Generate handler ======
   async function generate() {
@@ -137,21 +175,42 @@ document.addEventListener('DOMContentLoaded', async function () {
         throw new Error(j.error || `서버 오류 (${res.status})`);
       }
       if (j && j.pdf_url) {
-        statusEl.innerHTML = `완료! <a class="text-blue-600 underline" href="${API_BASE}${j.pdf_url}" target="_blank" rel="noopener">PDF 다운로드</a>`;
+        // PDF 생성 성공
+        const pdfUrl = `${API_BASE}${j.pdf_url}`;
+        statusEl.innerHTML = `
+          완료! 
+          <a class="text-blue-600 underline" href="${pdfUrl}" target="_blank" rel="noopener">PDF 다운로드</a>
+        `;
+        // PDF 새 창에서 자동 열기
+        window.open(pdfUrl, '_blank');
       } else if (j && j.html) {
-        // PDF 변환이 실패한 경우 HTML 다운로드 제공
+        // PDF 변환 실패, HTML만 제공
         const blob = new Blob([j.html], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const filename = `handout_${new Date().toISOString().slice(0,10)}.html`;
+        
+        // HTML을 새 창에서 자동으로 열기
+        const previewWindow = window.open(url, '_blank');
+        if (previewWindow) {
+          previewWindow.document.title = filename;
+        }
+        
         statusEl.innerHTML = `
           HTML 생성 완료! (PDF 변환 불가)<br>
-          <a class="inline-block mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" 
-             href="${url}" 
-             download="${filename}">
-            📄 HTML 다운로드
-          </a>
+          <div class="mt-3 flex gap-2">
+            <a class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" 
+               href="${url}" 
+               target="_blank">
+              👁️ 새 창에서 보기
+            </a>
+            <a class="inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition" 
+               href="${url}" 
+               download="${filename}">
+              📄 HTML 다운로드
+            </a>
+          </div>
           <p class="mt-2 text-sm text-slate-500">
-            💡 다운로드 후 브라우저에서 열어서 "인쇄 → PDF로 저장"으로 PDF 변환 가능합니다
+            💡 미리보기 창에서 Ctrl+P → "PDF로 저장"으로 PDF 변환 가능
           </p>
         `;
       } else {
