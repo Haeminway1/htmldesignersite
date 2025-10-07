@@ -23,14 +23,18 @@
 4. 다음 설정 적용:
    - **Root Directory**: `backend`
    - **Build Command**: `./render-build.sh`
-   - **Start Command**: `gunicorn app:app`
+   - **Start Command**: `gunicorn -c gunicorn_config.py app:app` ⚠️ **중요!**
 5. **환경 변수 추가** (최소 하나 필수):
    ```bash
    GOOGLE_API_KEY=your_key_here
    ```
 6. **Create Web Service** 클릭
 
-**상세 가이드**: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) 참조
+> ⚠️ **주의**: Start Command를 정확히 `gunicorn -c gunicorn_config.py app:app`로 설정하세요!
+
+**상세 가이드**:
+- [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) - 배포 가이드
+- [TIMEOUT_FIX_GUIDE.md](./TIMEOUT_FIX_GUIDE.md) - 타임아웃 문제 해결
 
 ---
 

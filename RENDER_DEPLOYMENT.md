@@ -17,7 +17,10 @@
 - **Root Directory**: `backend`
 - **Runtime**: `Python 3`
 - **Build Command**: `./render-build.sh`
-- **Start Command**: `gunicorn app:app`
+- **Start Command**: `gunicorn -c gunicorn_config.py app:app`
+  
+  > ⚠️ **중요**: Start Command를 정확히 `gunicorn -c gunicorn_config.py app:app`로 설정하세요!
+  > 이 설정은 타임아웃을 5분(300초)으로 늘려 AI API 응답을 기다릴 수 있게 합니다.
 
 #### 환경 변수 설정 (Environment Variables)
 
@@ -88,9 +91,41 @@ curl https://your-app.onrender.com/api/health
 }
 ```
 
+## ⚠️ 제한 사항 (Render 무료 플랜)
+
+### 메모리 제한
+- **512MB RAM**: 큰 파일 처리 시 메모리 부족 가능
+- **최대 파일 크기**: 5MB (개별 파일 3MB 권장)
+- **동시 요청 제한**: 1개 워커만 사용
+
+### 권장 사항
+1. **파일을 작게 유지**: 3MB 이하 권장
+2. **복잡한 작업은 여러 번 나눠서**: 한 번에 처리하지 말고 나눠서 요청
+3. **유료 플랜 고려**: Starter ($7/월) 이상 권장
+
+---
+
 ## 🔧 문제 해결
 
-### 1. AI 모듈 로드 실패
+### 1. Worker Timeout (WORKER TIMEOUT)
+
+**증상**: `CRITICAL] WORKER TIMEOUT` 에러 발생
+
+**해결 방법**:
+- **Start Command 확인**: `gunicorn -c gunicorn_config.py app:app`로 설정되어 있는지 확인
+- gunicorn_config.py가 빌드 시 생성되는지 확인
+- 타임아웃이 300초(5분)로 설정되어 있는지 확인
+
+### 2. 메모리 부족 (Out of Memory)
+
+**증상**: `Worker was sent SIGKILL! Perhaps out of memory?`
+
+**해결 방법**:
+1. **파일 크기 줄이기**: 5MB 이하로 제한
+2. **더 가벼운 모델 사용**: config.json에서 `gemini-2.5-flash` 사용 (이미 설정됨)
+3. **유료 플랜 업그레이드**: Starter 플랜 이상 권장
+
+### 3. AI 모듈 로드 실패
 
 **증상**: `AI_UNAVAILABLE` 에러 또는 `AI 서비스를 사용할 수 없습니다`
 

@@ -75,7 +75,7 @@ except ImportError as e:
 
 # Flask 앱 초기화
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB 제한
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB 제한 (Render 메모리 고려)
 app.url_map.strict_slashes = False  # /api/convert 와 /api/convert/ 모두 허용
 
 # CORS 설정
@@ -295,8 +295,9 @@ def favicon():
 def too_large(e):
     """파일 크기 초과 에러 처리"""
     return jsonify({
-        'error': '파일 크기가 너무 큽니다. 최대 16MB까지 허용됩니다.',
-        'code': 'FILE_TOO_LARGE'
+        'error': '파일 크기가 너무 큽니다. 최대 5MB까지 허용됩니다. (Render 무료 플랜 제한)',
+        'code': 'FILE_TOO_LARGE',
+        'max_size': '5MB'
     }), 413
 
 @app.errorhandler(500)
@@ -395,10 +396,11 @@ def convert_files():
             file_size = len(file_content)
             total_size += file_size
             
-            if total_size > 16 * 1024 * 1024:  # 16MB
+            if total_size > 5 * 1024 * 1024:  # 5MB (Render 메모리 제한)
                 return jsonify({
-                    'error': '전체 파일 크기가 16MB를 초과합니다.',
-                    'code': 'FILES_TOO_LARGE'
+                    'error': '전체 파일 크기가 5MB를 초과합니다. (Render 무료 플랜 제한)',
+                    'code': 'FILES_TOO_LARGE',
+                    'max_size': '5MB'
                 }), 400
             
             uploaded_files.append({
