@@ -588,6 +588,11 @@ class AI:
                 mime_type, _ = mimetypes.guess_type(str(path))
                 mime_type = mime_type or "application/octet-stream"
 
+                # Auto-detect image files and add to images array
+                if mime_type.startswith("image/"):
+                    normalized_images.append(normalized_path)
+                    continue
+
                 if mime_type in native_types:
                     native_file_paths.append(str(path))
                     # Skip text extraction to let provider handle the binary file
