@@ -26,10 +26,19 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import pdfkit
 
 # AI API 모듈 가져오기
-ai_module_path = Path(__file__).parent / "ai_api_module_v3"
-if not ai_module_path.exists():
-    ai_module_path = Path(__file__).parent.parent / "backend" / "ai_api_module_v3"
-sys.path.insert(0, str(ai_module_path))
+ai_module_paths = [
+    Path(__file__).parent / "ai_api_module_v3",
+    Path(__file__).parent.parent / "backend" / "ai_api_module_v3",
+    Path(__file__).parent / "ai_api_module_v3" / "ai_api_module",
+]
+
+AI_AVAILABLE = False
+AI = None
+
+for ai_module_path in ai_module_paths:
+    if ai_module_path.exists():
+        sys.path.insert(0, str(ai_module_path))
+        print(f"📦 AI 모듈 경로 추가: {ai_module_path}")
 
 try:
     from ai_api_module import AI
@@ -37,19 +46,32 @@ try:
     print("✅ AI API 모듈 로드 성공")
 except ImportError as e:
     print(f"⚠️ AI API 모듈을 찾을 수 없습니다: {e}")
-    print(f"확인한 경로: {ai_module_path}")
+    print(f"확인한 경로들: {[str(p) for p in ai_module_paths]}")
+    print(f"현재 sys.path: {sys.path[:3]}")
     print("🔄 AI API 모듈 없이 기본 서버로 실행합니다.")
     AI = None
     AI_AVAILABLE = False
 
 # 기존 HTML 디자이너 클래스 가져오기
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+src_path = Path(__file__).parent / "src"
+sys.path.insert(0, str(src_path))
 try:
     from basic_html_designer import HTMLDesigner
+    print("✅ HTMLDesigner 클래스 로드 성공")
 except ImportError as e:
     print(f"❌ HTMLDesigner 클래스를 찾을 수 없습니다: {e}")
-    print("src/basic_html_designer.py 파일이 있는지 확인하세요.")
-    sys.exit(1)
+    print(f"src 경로: {src_path}")
+    print(f"src 경로 존재 여부: {src_path.exists()}")
+    if src_path.exists():
+        print(f"src 디렉토리 내용: {list(src_path.iterdir())}")
+    print("⚠️ AI 모듈 없이는 서버 실행이 불가능합니다.")
+    if not AI_AVAILABLE:
+        print("❌ AI 모듈과 HTMLDesigner 모두 로드 실패. 서버를 시작할 수 없습니다.")
+        sys.exit(1)
+    else:
+        # AI가 있으면 일단 계속 진행
+        HTMLDesigner = None
+        print("⚠️ HTMLDesigner 없이 AI API만으로 실행합니다.")
 
 # Flask 앱 초기화
 app = Flask(__name__)
@@ -280,10 +302,24 @@ def too_large(e):
 @app.errorhandler(500)
 def internal_error(e):
     """내부 서버 에러 처리"""
+    import traceback
+    error_trace = traceback.format_exc()
     logger.error(f"Internal server error: {e}")
+    logger.error(f"Traceback: {error_trace}")
+    
+    # 디버그 모드에서는 자세한 에러 정보 반환
+    if app.debug or os.getenv('FLASK_DEBUG', 'False').lower() == 'true':
+        return jsonify({
+            'error': '서버 내부 오류가 발생했습니다.',
+            'code': 'INTERNAL_ERROR',
+            'detail': str(e),
+            'traceback': error_trace
+        }), 500
+    
     return jsonify({
         'error': '서버 내부 오류가 발생했습니다.',
-        'code': 'INTERNAL_ERROR'
+        'code': 'INTERNAL_ERROR',
+        'detail': str(e)
     }), 500
 
 @app.route('/api/health', methods=['GET'])
@@ -320,6 +356,16 @@ def convert_files():
         if request.method == 'OPTIONS':
             # Preflight 응답
             return ("", 204)
+        
+        # AI 모듈 사용 가능 여부 확인
+        if not AI_AVAILABLE:
+            logger.error("AI 모듈이 로드되지 않았습니다")
+            return jsonify({
+                'error': 'AI 서비스를 사용할 수 없습니다. 서버 관리자에게 문의하세요.',
+                'code': 'AI_UNAVAILABLE',
+                'detail': 'AI API 모듈이 로드되지 않았습니다. API 키를 확인하세요.'
+            }), 503
+        
         # 프롬프트 가져오기
         prompt = request.form.get('prompt', '').strip()
         if not prompt:

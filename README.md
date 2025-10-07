@@ -11,7 +11,30 @@
 - 🔒 **안전한 업로드**: 파일 크기 및 형식 제한, Rate Limiting 적용
 - 📱 **반응형 디자인**: 모바일, 태블릿, 데스크톱 모든 기기에서 사용 가능
 
-## 🚀 로컬 개발 환경 설정
+## 🚀 빠른 시작
+
+### Render 배포 (권장)
+
+**5분 안에 배포 완료!** 
+
+1. **Render 가입**: https://dashboard.render.com
+2. **New > Web Service** 클릭
+3. 이 저장소 연결
+4. 다음 설정 적용:
+   - **Root Directory**: `backend`
+   - **Build Command**: `./render-build.sh`
+   - **Start Command**: `gunicorn app:app`
+5. **환경 변수 추가** (최소 하나 필수):
+   ```bash
+   GOOGLE_API_KEY=your_key_here
+   ```
+6. **Create Web Service** 클릭
+
+**상세 가이드**: [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) 참조
+
+---
+
+## 🛠️ 로컬 개발 환경 설정
 
 ### 1. 저장소 클론
 ```bash
@@ -25,11 +48,6 @@ cd backend
 
 # Python 의존성 설치
 pip install -r requirements.txt
-
-# AI API 모듈 설치 (이미 포함되어 있음)
-cd ai_api_module_v3
-pip install -e ".[all]"
-cd ..
 
 # wkhtmltopdf 다운로드 (선택사항)
 python download_wkhtmltopdf.py
