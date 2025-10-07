@@ -139,8 +139,21 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (j && j.pdf_url) {
         statusEl.innerHTML = `완료! <a class="text-blue-600 underline" href="${API_BASE}${j.pdf_url}" target="_blank" rel="noopener">PDF 다운로드</a>`;
       } else if (j && j.html) {
-        // PDF 변환이 실패한 경우 HTML만 제공
-        statusEl.innerHTML = `HTML 생성 완료! (PDF 변환 불가)`;
+        // PDF 변환이 실패한 경우 HTML 다운로드 제공
+        const blob = new Blob([j.html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const filename = `handout_${new Date().toISOString().slice(0,10)}.html`;
+        statusEl.innerHTML = `
+          HTML 생성 완료! (PDF 변환 불가)<br>
+          <a class="inline-block mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" 
+             href="${url}" 
+             download="${filename}">
+            📄 HTML 다운로드
+          </a>
+          <p class="mt-2 text-sm text-slate-500">
+            💡 다운로드 후 브라우저에서 열어서 "인쇄 → PDF로 저장"으로 PDF 변환 가능합니다
+          </p>
+        `;
       } else {
         statusEl.textContent = 'PDF 링크를 받지 못했습니다.';
       }
