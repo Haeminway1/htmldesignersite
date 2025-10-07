@@ -64,11 +64,19 @@ document.addEventListener('DOMContentLoaded', async function () {
   autoGrow(promptEl); // 초기 적용
 
   // ====== Dropzone interactions ======
+  const dropzoneEmpty = document.getElementById('dropzoneEmpty');
+  
   function refreshFileList(files) {
     if (!files || files.length === 0) { 
+      // 파일이 없으면 기본 안내 문구 표시
+      dropzoneEmpty.classList.remove('hidden');
       fileList.innerHTML = ''; 
       return; 
     }
+    
+    // 파일이 있으면 기본 안내 문구 숨기기
+    dropzoneEmpty.classList.add('hidden');
+    
     let html = `
       <div class="flex items-center justify-between mb-3">
         <span class="text-sm font-semibold text-slate-700">첨부 파일 (${files.length}개)</span>
@@ -160,15 +168,19 @@ document.addEventListener('DOMContentLoaded', async function () {
   // 모달 버튼 이벤트
   modalPreviewBtn.addEventListener('click', () => {
     if (currentResult.type === 'pdf') {
+      // PDF 미리보기 (download=false)
       window.open(currentResult.url, '_blank');
     } else {
+      // HTML 미리보기
       window.open(currentResult.url, '_blank');
     }
   });
 
   modalPdfBtn.addEventListener('click', () => {
+    // PDF 다운로드 (download=true 파라미터 추가)
+    const downloadUrl = currentResult.url + '?download=true';
     const a = document.createElement('a');
-    a.href = currentResult.url;
+    a.href = downloadUrl;
     a.download = currentResult.filename;
     a.click();
   });

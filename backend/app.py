@@ -523,7 +523,7 @@ def convert_files():
 
 @app.route('/api/file/<file_id>.pdf', methods=['GET'])
 def get_pdf_file(file_id):
-    """PDF 파일 다운로드/스트리밍"""
+    """PDF 파일 다운로드/미리보기"""
     try:
         if file_id not in PDF_CACHE:
             abort(404)
@@ -533,10 +533,13 @@ def get_pdf_file(file_id):
             del PDF_CACHE[file_id]
             abort(404)
         
+        # download 쿼리 파라미터로 다운로드/미리보기 구분
+        is_download = request.args.get('download', 'false').lower() == 'true'
+        
         return send_file(
             pdf_path,
-            as_attachment=True,
-            download_name=f'html_material_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf',
+            as_attachment=is_download,  # download=true일 때만 다운로드
+            download_name=f'html_material_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf' if is_download else None,
             mimetype='application/pdf'
         )
         
