@@ -529,16 +529,88 @@ def convert_files():
 def get_pdf_file(file_id):
     """PDF 파일 다운로드/미리보기"""
     try:
+        # 캐시에 파일이 없는 경우
         if file_id not in PDF_CACHE:
-            abort(404)
+            logger.warning(f"⚠️ PDF 파일이 캐시에 없습니다: {file_id} (서버 재시작으로 인한 캐시 소실 가능)")
+            # HTML 에러 페이지 반환 (브라우저에서 보기 좋게)
+            return '''
+            <!DOCTYPE html>
+            <html lang="ko">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>파일 만료</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+                           display: flex; align-items: center; justify-content: center; 
+                           min-height: 100vh; margin: 0; background: #f3f4f6; }
+                    .container { text-align: center; padding: 2rem; background: white; 
+                                 border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; }
+                    h1 { color: #ef4444; font-size: 3rem; margin: 0; }
+                    h2 { color: #1f2937; margin: 1rem 0; }
+                    p { color: #6b7280; line-height: 1.6; }
+                    .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; 
+                           background: #3b82f6; color: white; text-decoration: none; 
+                           border-radius: 0.5rem; font-weight: 600; }
+                    .btn:hover { background: #2563eb; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>⏱️</h1>
+                    <h2>파일이 만료되었습니다</h2>
+                    <p>서버가 재시작되어 임시 파일이 삭제되었습니다.<br>
+                       메인 페이지로 돌아가서 다시 생성해주세요.</p>
+                    <a href="/" class="btn">메인으로 돌아가기</a>
+                </div>
+            </body>
+            </html>
+            ''', 404
         
         pdf_path = PDF_CACHE[file_id]['path']
+        
+        # 파일이 실제로 존재하지 않는 경우
         if not os.path.exists(pdf_path):
+            logger.warning(f"⚠️ PDF 파일이 디스크에 없습니다: {pdf_path}")
             del PDF_CACHE[file_id]
-            abort(404)
+            return '''
+            <!DOCTYPE html>
+            <html lang="ko">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>파일 없음</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+                           display: flex; align-items: center; justify-content: center; 
+                           min-height: 100vh; margin: 0; background: #f3f4f6; }
+                    .container { text-align: center; padding: 2rem; background: white; 
+                                 border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; }
+                    h1 { color: #ef4444; font-size: 3rem; margin: 0; }
+                    h2 { color: #1f2937; margin: 1rem 0; }
+                    p { color: #6b7280; line-height: 1.6; }
+                    .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; 
+                           background: #3b82f6; color: white; text-decoration: none; 
+                           border-radius: 0.5rem; font-weight: 600; }
+                    .btn:hover { background: #2563eb; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>📁</h1>
+                    <h2>파일을 찾을 수 없습니다</h2>
+                    <p>파일이 삭제되었습니다.<br>
+                       메인 페이지로 돌아가서 다시 생성해주세요.</p>
+                    <a href="/" class="btn">메인으로 돌아가기</a>
+                </div>
+            </body>
+            </html>
+            ''', 404
         
         # download 쿼리 파라미터로 다운로드/미리보기 구분
         is_download = request.args.get('download', 'false').lower() == 'true'
+        
+        logger.info(f"📥 PDF 파일 전송: {pdf_path} (download={is_download})")
         
         return send_file(
             pdf_path,
@@ -549,7 +621,41 @@ def get_pdf_file(file_id):
         
     except Exception as e:
         logger.error(f"PDF 파일 전송 실패: {e}")
-        abort(500)
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return '''
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>오류 발생</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+                       display: flex; align-items: center; justify-content: center; 
+                       min-height: 100vh; margin: 0; background: #f3f4f6; }
+                .container { text-align: center; padding: 2rem; background: white; 
+                             border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; }
+                h1 { color: #ef4444; font-size: 3rem; margin: 0; }
+                h2 { color: #1f2937; margin: 1rem 0; }
+                p { color: #6b7280; line-height: 1.6; }
+                .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; 
+                       background: #3b82f6; color: white; text-decoration: none; 
+                       border-radius: 0.5rem; font-weight: 600; }
+                .btn:hover { background: #2563eb; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>⚠️</h1>
+                <h2>오류가 발생했습니다</h2>
+                <p>파일 전송 중 문제가 발생했습니다.<br>
+                   잠시 후 다시 시도해주세요.</p>
+                <a href="/" class="btn">메인으로 돌아가기</a>
+            </div>
+        </body>
+        </html>
+        ''', 500
 
 @app.route('/api/models', methods=['GET'])
 def get_available_models():

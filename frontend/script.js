@@ -25,6 +25,20 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  // 랜덤 placeholder 설정
+  const placeholders = [
+    "세미나 안내문을 만들어줘. 모던하고 전문적인 느낌으로, 파란색 계열을 중심으로 디자인해줘. 아이콘은 적절히 넣고, 너무 화려하지 않게",
+    "카페 이벤트 전단지를 따뜻하고 아늑한 분위기로 만들어줘. 베이지와 브라운 톤을 사용하고, 여백을 충분히 둬서 깔끔하게. 손글씨 느낌의 폰트로",
+    "학원 수업 교재를 디자인해줘. 학생들이 집중하기 좋게 깔끔하고 구조화된 레이아웃으로. 중요한 내용은 하이라이트 박스로 강조하고, 삽화는 최소화해줘",
+    "부동산 매물 안내서를 고급스럽고 신뢰감 있게 만들어줘. 다크 네이비와 골드 포인트를 사용하고, 사진이 돋보이도록 여백을 많이 둬. 과도한 장식은 빼줘",
+    "동아리 모집 포스터를 만들어줘. 젊고 역동적인 느낌으로, 밝은 컬러를 과감하게 써. 그라데이션 효과를 넣고, 타이포그래피를 크고 임팩트 있게",
+    "회사 보고서 표지를 미니멀하고 전문적으로 디자인해줘. 흰색과 회색 위주로 하고, 한 가지 포인트 컬러만 사용해. 도형이나 패턴은 넣지 마",
+    "요가 클래스 안내문을 자연스럽고 평화로운 느낌으로 만들어줘. 연한 그린과 화이트 조합으로, 여백을 여유롭게. 손그림 스타일 일러스트를 포함해줘",
+    "제품 설명서를 직관적이고 읽기 쉽게 디자인해줘. 단계별로 명확하게 구분하고, 아이콘과 번호를 활용해. 복잡한 배경은 쓰지 말고 화이트 베이스로"
+  ];
+  const randomPlaceholder = placeholders[Math.floor(Math.random() * placeholders.length)];
+  if (promptEl) promptEl.placeholder = randomPlaceholder;
+
   // 현재 생성된 결과 저장
   let currentResult = {
     html: '',

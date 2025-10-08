@@ -83,9 +83,15 @@
   <!-- Main -->
   <main class="mx-auto max-w-4xl px-6 pt-20 pb-16">
     <section class="mb-12 text-center">
-      <h1 class="text-5xl md:text-6xl font-bold tracking-tight mb-5 text-slate-900">유인물 디자인하기</h1>
-      <p class="text-lg text-slate-600 font-medium">
-        프롬프트를 입력하고 파일을 추가한 후, <span class="text-slate-900">생성</span> 버튼을 눌러보세요
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-slate-900 leading-tight">
+        워드보다 세련되게, 디자이너보다 빠르게<br>
+        <span class="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">AI가 만드는 전문가급 유인물</span>
+      </h1>
+      <p class="text-base text-slate-600 font-medium mt-6">
+        프롬프트로 말하면, AI가 디자인합니다
+      </p>
+      <p class="text-sm text-slate-500 mt-2">
+        파일을 추가하고 원하는 스타일을 입력해보세요
       </p>
     </section>
 
@@ -95,7 +101,7 @@
       <label for="prompt" class="sr-only">프롬프트</label>
       <div class="space-y-3">
         <textarea id="prompt" class="auto-grow w-full resize-none rounded-2xl border-2 border-slate-200 bg-white focus:outline-none focus:border-slate-900 p-5 text-base leading-relaxed placeholder:text-slate-400 transition-colors" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;"
-          rows="4" placeholder="예) 고1 영어 문법 유인물: 수동태 핵심 정리 + 예문 10개, 마지막 페이지는 퀴즈 5문항으로 구성…"></textarea>
+          rows="4" placeholder=""></textarea>
         <div class="flex justify-end">
           <button id="generateBtn" class="btn-toss px-6 py-3 text-base font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md">생성하기</button>
         </div>
