@@ -286,6 +286,19 @@ document.addEventListener('DOMContentLoaded', async function () {
       return;
     }
 
+    // 파일 크기 검증 (프론트엔드)
+    if (fileInput.files && fileInput.files.length > 0) {
+      let totalSize = 0;
+      for (let file of fileInput.files) {
+        totalSize += file.size;
+      }
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (totalSize > maxSize) {
+        statusEl.innerHTML = `<span class="text-red-600">파일 크기가 너무 큽니다. 현재: ${(totalSize / 1024 / 1024).toFixed(2)}MB, 최대: 20MB</span>`;
+        return;
+      }
+    }
+
     // === Loading ON ===
     setLoading(true);
     statusEl.textContent = '';
