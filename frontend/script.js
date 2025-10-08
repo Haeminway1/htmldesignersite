@@ -310,7 +310,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         Array.from(fileInput.files).forEach((f) => fd.append('files', f));
       }
 
-      const res = await fetch(`${API_BASE}/api/convert`, { method: 'POST', body: fd });
+      // 타임아웃 설정 (5분)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
+      const res = await fetch(`${API_BASE}/api/convert`, { 
+        method: 'POST', 
+        body: fd,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       const j = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -337,7 +347,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         statusEl.textContent = 'PDF 링크를 받지 못했습니다.';
       }
     } catch (err) {
-      statusEl.textContent = err.message || '오류가 발생했습니다.';
+      let errorMessage = '오류가 발생했습니다.';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = '처리 시간이 너무 오래 걸립니다. 파일 크기를 줄이거나 나중에 다시 시도해주세요.';
+      } else if (err.message === 'Failed to fetch') {
+        errorMessage = '서버에 연결할 수 없습니다. 다음을 확인해주세요:\n• 인터넷 연결 상태\n• 1분에 10회 이상 요청하지 않았는지\n• 서버가 시작 중인지 (최초 30초 소요)';
+      } else {
+        errorMessage = err.message || '오류가 발생했습니다.';
+      }
+      
+      statusEl.innerHTML = `<div class="text-red-600 whitespace-pre-line">${errorMessage}</div>`;
     } finally {
       // === Loading OFF ===
       setLoading(false);

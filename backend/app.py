@@ -95,7 +95,7 @@ CORS(app, origins=["*"])  # 프로덕션에서는 특정 도메인으로 제한
 # Rate Limiting 설정 (flask-limiter v3.x 호환)
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["100 per hour", "5 per minute"],
+    default_limits=["200 per hour", "20 per minute"],  # 제한 완화
 )
 limiter.init_app(app)
 
@@ -382,7 +382,7 @@ def static_assets(path):
     abort(404)
 
 @app.route('/api/convert', methods=['POST', 'OPTIONS'])
-@limiter.limit("3 per minute")
+@limiter.limit("10 per minute")  # Rate limit 완화
 def convert_files():
     """파일들을 HTML로 변환 후 PDF 생성"""
     try:
