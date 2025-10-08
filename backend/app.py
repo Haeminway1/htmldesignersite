@@ -93,11 +93,14 @@ app.url_map.strict_slashes = False  # /api/convert 와 /api/convert/ 모두 허�
 CORS(app, origins=["*"])  # 프로덕션에서는 특정 도메인으로 제한
 
 # Rate Limiting 설정 (flask-limiter v3.x 호환)
+# 단일 워커 환경이므로 in-memory storage 사용 (프로덕션에서도 안전)
 limiter = Limiter(
     key_func=get_remote_address,
+    app=app,
     default_limits=["200 per hour", "20 per minute"],  # 제한 완화
+    storage_uri="memory://",  # 명시적으로 in-memory 지정 (경고 제거)
+    strategy="fixed-window"  # 고정 윈도우 전략
 )
-limiter.init_app(app)
 
 # 로깅 설정
 logging.basicConfig(
