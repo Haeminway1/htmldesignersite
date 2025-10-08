@@ -7,16 +7,70 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root { color-scheme: light dark; }
+    :root { 
+      color-scheme: light dark;
+      /* Toss Design Tokens */
+      --color-primary: #1F2937;
+      --color-text: #111827;
+      --color-text-secondary: #6B7280;
+      --color-text-tertiary: #9CA3AF;
+      --color-border: #E5E7EB;
+      --color-border-light: #F3F4F6;
+      --color-bg-elevated: #FFFFFF;
+      --color-bg-base: #F9FAFB;
+      
+      /* Typography Scale (8pt grid) */
+      --text-xs: 0.75rem;    /* 12px */
+      --text-sm: 0.875rem;   /* 14px */
+      --text-base: 1rem;     /* 16px */
+      --text-lg: 1.125rem;   /* 18px */
+      --text-xl: 1.25rem;    /* 20px */
+      --text-2xl: 1.5rem;    /* 24px */
+      --text-3xl: 2rem;      /* 32px */
+      --text-4xl: 2.5rem;    /* 40px */
+      --text-5xl: 3rem;      /* 48px */
+      
+      /* Spacing (8pt grid) */
+      --space-1: 0.25rem;    /* 4px */
+      --space-2: 0.5rem;     /* 8px */
+      --space-3: 0.75rem;    /* 12px */
+      --space-4: 1rem;       /* 16px */
+      --space-6: 1.5rem;     /* 24px */
+      --space-8: 2rem;       /* 32px */
+      --space-12: 3rem;      /* 48px */
+      
+      /* Shadows (Toss-style) */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      
+      /* Border Radius */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-2xl: 24px;
+    }
+    
     html, body { height: 100%; }
-    body { font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; }
+    
+    body { 
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "kern" 1, "liga" 1;
+    }
+    
     /* Toss-like typography */
     .logo-text {
       font-family: "Pretendard", sans-serif;
-      font-weight: 800;
-      letter-spacing: -0.03em;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      font-feature-settings: "ss01" 1;
     }
     /* Textarea auto-grow cap */
     textarea.auto-grow { max-height: 16rem; overflow-y: auto; }
@@ -39,148 +93,312 @@
       content:""; display:block; height:100%; width:40%; background:rgba(0,0,0,.15);
       animation: bar 1.2s linear infinite;
     }
-    /* Toss-like button hover */
+    /* Toss-like button hover - 더 부드럽고 자연스러운 인터랙션 */
     .btn-toss {
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      will-change: transform, box-shadow;
     }
-    .btn-toss:hover {
-      transform: translateY(-1px);
+    .btn-toss:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.2);
     }
-    .btn-toss:active {
+    .btn-toss:active:not(:disabled) {
       transform: translateY(0);
+      transition-duration: 0.1s;
     }
-    /* Custom scrollbar for webkit browsers */
+    
+    /* Primary Button Enhancement */
+    .btn-primary {
+      background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: left 0.5s;
+    }
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+    /* Custom scrollbar for webkit browsers - 더 세련된 스타일 */
     textarea::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
     }
     textarea::-webkit-scrollbar-track {
       background: transparent;
     }
     textarea::-webkit-scrollbar-thumb {
       background: #cbd5e1;
-      border-radius: 4px;
+      border-radius: 8px;
     }
     textarea::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
+    }
+    
+    /* Modal Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.2s ease-out;
+    }
+    .animate-slideUp {
+      animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    /* Loading Spinner Enhancement */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    
+    /* Focus Ring - Toss style */
+    *:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
+    }
+    
+    /* Textarea focus - 더 세련된 스타일 */
+    textarea:focus {
+      border-color: transparent !important;  /* 기존 테두리 숨김 */
+      outline: 3px solid #1f2937 !important;
+      outline-offset: -3px !important;  /* 내부로 당겨서 기존 테두리 덮기 */
+      box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.06) !important;
+    }
+    
+    /* Improved Selection */
+    ::selection {
+      background-color: rgba(31, 41, 55, 0.15);
+      color: inherit;
+    }
+    
+    /* Smooth Scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Mobile Optimization */
+    @media (max-width: 768px) {
+      .logo-text {
+        font-size: 1.5rem;
+      }
+    }
+    
+    /* Text Animation Styles */
+    .split-text {
+      display: inline-block;
+      perspective: 1000px;
+    }
+    
+    .split-char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: charFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      will-change: transform, opacity;
+    }
+    
+    /* Gradient text 스타일 */
+    .gradient-text {
+      background: linear-gradient(to bottom right, #1F2937, #374151, #1F2937);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Gradient text의 split-char도 동일한 gradient */
+    .gradient-text .split-char {
+      background: linear-gradient(to bottom right, #1F2937, #374151, #1F2937);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    @keyframes charFadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in-up {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Prevent layout shift during animation */
+    .split-text::before {
+      content: attr(data-text);
+      visibility: hidden;
+      display: block;
+      height: 0;
+      overflow: hidden;
     }
   </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4799178225000223"
   crossorigin="anonymous"></script>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900">
-  <!-- Header -->
-  <header class="sticky top-0 z-10 backdrop-blur-sm border-b border-slate-200 bg-white/80">
-    <div class="mx-auto max-w-4xl px-6 py-4 flex items-center justify-between">
+  <!-- Header - Toss style: 깔끔하고 미니멀 -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl border-b border-slate-200/60 bg-white/90">
+    <div class="mx-auto max-w-5xl px-6 py-5 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <span class="logo-text text-2xl text-slate-900">Extravagant</span>
       </div>
-      <nav class="text-sm text-slate-600">
-        <a href="#" class="hover:text-slate-900 transition-colors">가이드</a>
+      <nav class="text-sm font-medium text-slate-600">
+        <a href="#" class="px-4 py-2 rounded-lg hover:bg-slate-100 hover:text-slate-900 transition-all duration-200">가이드</a>
       </nav>
     </div>
   </header>
 
   <!-- Main -->
-  <main class="mx-auto max-w-4xl px-6 pt-20 pb-16">
-    <section class="mb-12 text-center">
-      <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-slate-900 leading-tight">
-        워드보다 세련되게, 디자이너보다 빠르게<br>
-        <span class="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">AI가 만드는 전문가급 유인물</span>
+  <main class="mx-auto max-w-5xl px-6 pt-24 pb-20">
+    <!-- Hero Section - Toss style: 명확한 위계와 여백 + 애니메이션 -->
+    <section class="mb-16 text-center">
+      <h1 class="text-[2.75rem] md:text-6xl font-extrabold tracking-[-0.02em] mb-4 text-slate-900 leading-[1.15]">
+        <span class="split-text" data-text="워드보다 세련되게"></span><br>
+        <span class="gradient-text inline-block mt-1">
+          <span class="split-text" data-text="AI가 디자인해주는 문서"></span>
+        </span>
       </h1>
-      <p class="text-base text-slate-600 font-medium mt-6">
-        프롬프트로 말하면, AI가 디자인합니다
-      </p>
-      <p class="text-sm text-slate-500 mt-2">
-        파일을 추가하고 원하는 스타일을 입력해보세요
-      </p>
+      <div class="mt-8 space-y-2">
+        <p class="text-lg text-slate-700 font-semibold fade-in-up" style="animation-delay: 0.6s;">
+          프롬프트로 말하면, AI가 디자인합니다
+        </p>
+        <p class="text-sm text-slate-500 font-medium fade-in-up" style="animation-delay: 0.8s;">
+          파일을 추가하고 원하는 스타일을 입력해보세요
+        </p>
+      </div>
     </section>
 
-    <!-- Composer card -->
-    <section class="relative bg-white rounded-3xl shadow-toss border border-slate-200 p-6 md:p-8">
+    <!-- Composer Card - Toss style: 그림자와 radius 최적화 -->
+    <section class="relative bg-white rounded-[28px] shadow-lg border border-slate-200/80 p-8 md:p-10 transition-shadow hover:shadow-xl">
       <!-- Prompt textarea -->
       <label for="prompt" class="sr-only">프롬프트</label>
-      <div class="space-y-3">
-        <textarea id="prompt" class="auto-grow w-full resize-none rounded-2xl border-2 border-slate-200 bg-white focus:outline-none focus:border-slate-900 p-5 text-base leading-relaxed placeholder:text-slate-400 transition-colors" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;"
+      <div class="space-y-4">
+        <textarea id="prompt" class="auto-grow w-full resize-none rounded-2xl border-2 border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none p-6 text-base leading-relaxed placeholder:text-slate-400 font-medium transition-all duration-200" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;"
           rows="4" placeholder=""></textarea>
         <div class="flex justify-end">
-          <button id="generateBtn" class="btn-toss px-6 py-3 text-base font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md">생성하기</button>
+          <button id="generateBtn" class="btn-toss btn-primary px-8 py-4 text-base font-bold rounded-2xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">생성하기</button>
         </div>
       </div>
 
-      <!-- Loading Overlay -->
-      <div id="loadingOverlay" class="hidden absolute inset-0 rounded-3xl bg-white/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-slate-900">
-        <div class="relative w-16 h-16">
-          <div class="absolute inset-0 rounded-full border-4 border-slate-200"></div>
-          <div class="absolute inset-0 rounded-full border-4 border-slate-900 border-t-transparent animate-spin"></div>
+      <!-- Loading Overlay - Toss style: 부드러운 로딩 애니메이션 -->
+      <div id="loadingOverlay" class="hidden absolute inset-0 rounded-[28px] bg-white/98 backdrop-blur-md z-20 flex flex-col items-center justify-center text-slate-900">
+        <div class="relative w-20 h-20">
+          <div class="absolute inset-0 rounded-full border-[3px] border-slate-200"></div>
+          <div class="absolute inset-0 rounded-full border-[3px] border-slate-900 border-t-transparent animate-spin"></div>
         </div>
-        <div class="mt-6 text-base font-semibold">생성 중입니다</div>
-        <div class="mt-2 text-sm text-slate-500">잠시만 기다려주세요</div>
+        <div class="mt-8 text-lg font-bold tracking-tight">생성 중입니다</div>
+        <div class="mt-2 text-sm text-slate-500 font-medium">잠시만 기다려주세요</div>
       </div>
 
-      <!-- Dropzone -->
-      <div id="dropzone" class="mt-6 rounded-2xl border-2 border-dashed border-slate-300 p-8 cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-all">
-        <div id="dropzoneEmpty" class="flex flex-col items-center justify-center gap-3 text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-slate-400">
-            <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v9.69l2.47-2.47a.75.75 0 111.06 1.06l-3.75 3.75a.75.75 0 01-1.06 0l-3.75-3.75a.75.75 0 111.06-1.06l2.47 2.47V3a.75.75 0 01.75-.75zM3.75 15a.75.75 0 01.75.75v2.25A2.25 2.25 0 006.75 20.25h10.5A2.25 2.25 0 0019.5 18v-2.25a.75.75 0 011.5 0V18a3.75 3.75 0 01-3.75 3.75H6.75A3.75 3.75 0 013 18v-2.25A.75.75 0 013.75 15z" clip-rule="evenodd" />
-          </svg>
-          <p class="text-base text-slate-600 font-medium">
-            파일을 드래그하거나 클릭해서 선택하세요
-          </p>
-          <p class="text-sm text-slate-500">
-            여러 개 파일 추가 가능 · 최대 20MB
-          </p>
+      <!-- Dropzone - Toss style: 부드러운 인터랙션 -->
+      <div id="dropzone" class="mt-8 rounded-2xl border-2 border-dashed border-slate-300 cursor-pointer transition-all duration-200 group">
+        <div class="p-10 hover:bg-slate-50/60 transition-colors duration-200">
+          <!-- Capacity Bar -->
+          <div class="mb-6 bg-slate-100 relative overflow-hidden rounded-full h-2.5">
+            <div id="capacityBar" class="h-full transition-all duration-300 ease-out rounded-full" style="width: 0%; background-color: #64748b;"></div>
+          </div>
+          <div id="dropzoneEmpty" class="flex flex-col items-center justify-center gap-4 text-center">
+            <div class="p-4 rounded-2xl bg-slate-100 group-hover:bg-slate-200 transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-slate-500 group-hover:text-slate-700 transition-colors duration-200">
+                <path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v9.69l2.47-2.47a.75.75 0 111.06 1.06l-3.75 3.75a.75.75 0 01-1.06 0l-3.75-3.75a.75.75 0 111.06-1.06l2.47 2.47V3a.75.75 0 01.75-.75zM3.75 15a.75.75 0 01.75.75v2.25A2.25 2.25 0 006.75 20.25h10.5A2.25 2.25 0 0019.5 18v-2.25a.75.75 0 011.5 0V18a3.75 3.75 0 01-3.75 3.75H6.75A3.75 3.75 0 013 18v-2.25A.75.75 0 013.75 15z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-base text-slate-700 font-semibold mb-1">
+                파일을 드래그하거나 클릭해서 선택하세요
+              </p>
+              <p class="text-sm text-slate-500 font-medium">
+                <span id="capacityText">0MB / 20MB</span>
+              </p>
+            </div>
+          </div>
+          <input id="fileInput" type="file" class="hidden" multiple />
+          <div id="fileList" class="w-full"></div>
         </div>
-        <input id="fileInput" type="file" class="hidden" multiple />
-        <div id="fileList" class="w-full"></div>
       </div>
 
-      <!-- Status & Result -->
-      <div class="mt-6 flex items-start gap-3">
-        <div id="spinner" class="hidden animate-spin h-5 w-5 rounded-full border-2 border-slate-200 border-t-slate-900"></div>
-        <div id="status" class="text-base text-slate-700" aria-live="polite"></div>
+      <!-- Status & Result - Toss style: 명확한 피드백 -->
+      <div class="mt-8 flex items-start gap-4">
+        <div id="spinner" class="hidden animate-spin h-5 w-5 rounded-full border-2 border-slate-300 border-t-slate-900"></div>
+        <div id="status" class="text-base text-slate-700 font-medium" aria-live="polite"></div>
       </div>
 
     </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="mt-20 py-10 text-center text-sm text-slate-500">
-    © <span id="year"></span> Extravagant. All rights reserved.
+  <!-- Footer - Toss style: 심플하고 깔끔 -->
+  <footer class="mt-24 py-12 text-center">
+    <p class="text-sm font-medium text-slate-400">
+      © <span id="year"></span> Extravagant. All rights reserved.
+    </p>
   </footer>
 
-  <!-- Result Modal -->
-  <div id="resultModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 transform transition-all">
-      <h2 class="text-2xl font-bold text-slate-900 mb-6">생성 완료</h2>
-      <p class="text-slate-600 mb-8">원하는 작업을 선택하세요</p>
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <button id="modalPreviewBtn" class="btn-toss flex items-center justify-center gap-2 px-5 py-4 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-semibold shadow-md transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+  <!-- Result Modal - Toss style: 모달 애니메이션과 버튼 개선 -->
+  <div id="resultModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fadeIn">
+    <div class="bg-white rounded-[32px] shadow-2xl max-w-2xl w-full p-10 transform transition-all animate-slideUp">
+      <div class="mb-8">
+        <h2 class="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">생성 완료</h2>
+        <p class="text-slate-600 font-medium">원하는 작업을 선택하세요</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-8">
+        <button id="modalPreviewBtn" class="btn-toss btn-primary flex items-center justify-center gap-3 px-6 py-5 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 font-bold shadow-lg transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           미리보기
         </button>
-        <button id="modalPdfBtn" class="btn-toss flex items-center justify-center gap-2 px-5 py-4 bg-white text-slate-900 border-2 border-slate-300 rounded-xl hover:bg-slate-50 font-semibold transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+        <button id="modalPdfBtn" class="btn-toss flex items-center justify-center gap-3 px-6 py-5 bg-white text-slate-900 border-2 border-slate-200 rounded-2xl hover:bg-slate-50 hover:border-slate-300 font-bold transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
           PDF 다운로드
         </button>
-        <button id="modalHtmlBtn" class="btn-toss flex items-center justify-center gap-2 px-5 py-4 bg-white text-slate-900 border-2 border-slate-300 rounded-xl hover:bg-slate-50 font-semibold transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+        <button id="modalHtmlBtn" class="btn-toss flex items-center justify-center gap-3 px-6 py-5 bg-white text-slate-900 border-2 border-slate-200 rounded-2xl hover:bg-slate-50 hover:border-slate-300 font-bold transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
           </svg>
           HTML 다운로드
         </button>
-        <button id="modalEditBtn" class="btn-toss flex items-center justify-center gap-2 px-5 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-md transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+        <button id="modalEditBtn" class="btn-toss flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-bold shadow-lg transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
           </svg>
           계속해서 편집
         </button>
       </div>
-      <button id="modalCloseBtn" class="w-full py-3 text-slate-600 hover:text-slate-900 font-medium transition-colors">
+      <button id="modalCloseBtn" class="w-full py-4 text-slate-600 hover:text-slate-900 font-semibold transition-colors rounded-xl hover:bg-slate-100">
         닫기
       </button>
     </div>

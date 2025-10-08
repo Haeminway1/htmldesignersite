@@ -25,6 +25,47 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  // ====== Text Split Animation ======
+  function splitTextAnimation() {
+    const splitTexts = document.querySelectorAll('.split-text');
+    
+    splitTexts.forEach((element, index) => {
+      const text = element.getAttribute('data-text');
+      if (!text) return;
+      
+      // 텍스트를 개별 문자로 분리
+      const chars = text.split('');
+      element.innerHTML = '';
+      
+      chars.forEach((char, charIndex) => {
+        const span = document.createElement('span');
+        span.className = 'split-char';
+        span.textContent = char;
+        // 공백 유지
+        if (char === ' ') {
+          span.innerHTML = '&nbsp;';
+        }
+        
+        // 각 문자에 딜레이 적용 (줄별로 다른 시작 시간)
+        const baseDelay = index * 0.3; // 줄별 시작 딜레이
+        const charDelay = charIndex * 0.03; // 문자별 딜레이
+        span.style.animationDelay = `${baseDelay + charDelay}s`;
+        
+        element.appendChild(span);
+      });
+    });
+  }
+
+  // 폰트 로드 후 애니메이션 실행
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      splitTextAnimation();
+    });
+  } else {
+    // 폰트 API를 지원하지 않는 브라우저
+    splitTextAnimation();
+  }
+
   // 랜덤 placeholder 설정
   const placeholders = [
     "세미나 안내문을 만들어줘. 모던하고 전문적인 느낌으로, 파란색 계열을 중심으로 디자인해줘. 아이콘은 적절히 넣고, 너무 화려하지 않게",
@@ -79,8 +120,50 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // ====== Dropzone interactions ======
   const dropzoneEmpty = document.getElementById('dropzoneEmpty');
+  const capacityBar = document.getElementById('capacityBar');
+  const capacityText = document.getElementById('capacityText');
+  const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+  
+  function updateCapacityBar(totalBytes) {
+    const percentage = (totalBytes / maxSize) * 100;
+    const clampedPercentage = Math.min(percentage, 100);
+    
+    if (capacityBar) {
+      capacityBar.style.width = `${clampedPercentage}%`;
+      
+      // 색상 변경 로직 - 단색으로 전환
+      if (percentage < 70) {
+        capacityBar.style.backgroundColor = '#64748b'; // 회색 (slate-500)
+      } else if (percentage < 85) {
+        capacityBar.style.backgroundColor = '#f59e0b'; // 주황색
+      } else {
+        capacityBar.style.backgroundColor = '#ef4444'; // 빨간색
+      }
+    }
+    
+    if (capacityText) {
+      const usedMB = (totalBytes / 1024 / 1024).toFixed(1);
+      capacityText.textContent = `${usedMB}MB / 20MB`;
+      
+      // 용량 초과 시 빨간색으로 표시
+      if (percentage > 100) {
+        capacityText.style.color = '#ef4444';
+      } else {
+        capacityText.style.color = '';
+      }
+    }
+  }
   
   function refreshFileList(files) {
+    // 전체 용량 계산
+    let totalSize = 0;
+    if (files && files.length > 0) {
+      Array.from(files).forEach(f => {
+        totalSize += f.size;
+      });
+    }
+    updateCapacityBar(totalSize);
+    
     if (!files || files.length === 0) { 
       // 파일이 없으면 기본 안내 문구 표시
       dropzoneEmpty.classList.remove('hidden');
