@@ -1,6 +1,6 @@
 {
     "ai_settings": {
-        "model": "gemini-2.5-pro",
+        "model": "grok-4-fast",
         "temperature": 0.65,
         "reference": ["guideline/guideline.md", "guideline/basic_structure.html"]
     },
