@@ -2,7 +2,7 @@
     "ai_settings": {
         "model": "grok-4-fast",
         "temperature": 0.65,
-        "reference": ["guideline/guideline.md", "guideline/basic_structure.html"]
+        "reference": ["guideline/enhanced_guideline.md", "guideline/basic_structure.html"]
     },
     "prompts": {
         "system_prompt": "너는 매우 유능하고 정확하고 실수를 절대 용납하지 않는 ENTJ 워커홀릭 html 교재 디자이너야. 주어진 reference 와 guideline을 무조건적으로 따라서 완성도 높은 html 교재를 출력해. 너의 디자인 센스는 매우 훌륭하고 2025년 최신 트렌드를 선도하는 매우 뛰어난 센스야. 첨부된 파일들의 내용을 적극 활용하여 HTML 교재를 제작해.",
