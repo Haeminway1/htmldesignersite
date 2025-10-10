@@ -6,7 +6,8 @@
 
 - 📁 **다양한 파일 형식 지원**: PDF, Word, Excel, PowerPoint, 이미지, 텍스트 등
 - 🤖 **다중 AI 모델**: Gemini, GPT, Claude, Grok 등 다양한 AI 모델 선택 가능
-- 📄 **PDF 자동 변환**: 생성된 HTML을 고품질 PDF로 자동 변환
+- 📄 **정확한 PDF 변환**: Chrome 엔진으로 브라우저와 100% 동일한 PDF 생성 ⭐ NEW
+- 🇰🇷 **한글 완벽 지원**: 폰트 자동 로딩으로 한글 깨짐 방지 ⭐ NEW
 - ⚡ **빠른 처리**: 캐시 시스템으로 동일한 요청은 즉시 처리
 - 🔒 **안전한 업로드**: 파일 크기 및 형식 제한, Rate Limiting 적용
 - 📱 **반응형 디자인**: 모바일, 태블릿, 데스크톱 모든 기기에서 사용 가능
@@ -135,9 +136,14 @@ htmldesignersite/
 │       └── library/
 ├── frontend/               # 정적 웹사이트
 │   ├── index.html         # 메인 페이지
-│   ├── styles.css         # 스타일시트
 │   └── script.js          # JavaScript 로직
-└── README.md
+├── documentation/          # 📚 세부 기술 문서
+│   ├── README.md          # 문서 가이드
+│   ├── pdf-conversion-system.md
+│   ├── korean-font-fix.md
+│   └── dev-log-YYYY-MM-DD.md  # 날짜별 개발 이력
+├── dev_documentation.md   # 통합 개발자 가이드
+└── README.md              # 프로젝트 소개
 ```
 
 ## 🔧 API 엔드포인트
@@ -226,6 +232,14 @@ htmldesignersite/
 1. GitHub Issues 페이지에 문의
 2. 로그 파일 확인 (`backend/app.log`)
 3. 브라우저 개발자 도구 콘솔 확인
+
+## 📚 문서
+
+- **[통합 개발자 가이드](./dev_documentation.md)** - 전체 시스템 아키텍처 및 개발 가이드
+- **[세부 기술 문서](./documentation/)** - 주제별 심층 문서
+  - [PDF 변환 시스템](./documentation/pdf-conversion-system.md)
+  - [한글 폰트 문제 해결](./documentation/korean-font-fix.md)
+  - [개발 이력](./documentation/dev-log-2025-10-10.md)
 
 ---
 

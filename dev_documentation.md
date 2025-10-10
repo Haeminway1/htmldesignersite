@@ -412,7 +412,13 @@ line-height: 1.2-1.35 (제목)
 htmldesignersite/
 ├── .gitignore                      # Git 무시 파일
 ├── README.md                       # 프로젝트 소개
-├── dev_documentation.md            # 🔴 이 문서 (개발자 가이드)
+├── dev_documentation.md            # 🔴 이 문서 (통합 개발자 가이드)
+│
+├── documentation/                  # 📚 세부 기술 문서
+│   ├── README.md                  # 문서 가이드
+│   ├── pdf-conversion-system.md   # PDF 변환 시스템 가이드
+│   ├── korean-font-fix.md         # 한글 폰트 문제 해결
+│   └── dev-log-2025-10-10.md      # 개발 이력 (2025-10-10)
 │
 ├── backend/                        # 백엔드 애플리케이션
 │   ├── app.py                     # Flask 메인 애플리케이션
@@ -787,10 +793,41 @@ Chrome이 약간 느리지만, **정확도가 압도적으로 높습니다**.
 - [x] Flexbox/Grid 레이아웃이 정확
 - [x] 배경색과 테두리가 표시됨
 - [x] 페이지 넘김이 자연스러움
+- [x] **한글이 깨지지 않고 정상 표시됨** ✨ NEW
 
-### 10.9 추가 정보
+### 10.9 한글 폰트 문제 해결
 
-상세한 설치 및 트러블슈팅 가이드는 [`backend/PDF_CONVERSION_GUIDE.md`](./backend/PDF_CONVERSION_GUIDE.md)를 참조하세요.
+**문제**: PDF에서 한글이 □□□로 표시되거나 깨짐
+
+**해결 (3단계 방어선)**:
+
+1. **HTML 자동 폰트 추가**
+   - `_ensure_korean_fonts()` 메서드가 자동으로 Noto Sans KR 추가
+   - HTML에 폰트가 없으면 Google Fonts 링크 삽입
+
+2. **웹폰트 로딩 대기**
+   - 기본 로딩: 3초 (`implicitly_wait`)
+   - 웹폰트 로딩: 추가 2초 (`time.sleep`)
+   - JavaScript 확인: `document.fonts.ready`
+
+3. **서버 시스템 폰트**
+   - Render 빌드 시 `fonts-noto-cjk`, `fonts-nanum` 자동 설치
+   - 로컬: OS별로 한글 폰트 설치 필요
+
+**로그 확인**:
+```
+✅ HTML에 한글 폰트가 이미 포함되어 있습니다
+✅ 웹폰트 로딩 완료
+✅ 한글 폰트 (Noto CJK) 설치 완료
+```
+
+상세 가이드: [`documentation/korean-font-fix.md`](./documentation/korean-font-fix.md)
+
+### 10.10 추가 정보
+
+- **PDF 변환 전체 가이드**: [`documentation/pdf-conversion-system.md`](./documentation/pdf-conversion-system.md)
+- **한글 폰트 문제 해결**: [`documentation/korean-font-fix.md`](./documentation/korean-font-fix.md)
+- **개발 이력 (2025-10-10)**: [`documentation/dev-log-2025-10-10.md`](./documentation/dev-log-2025-10-10.md)
 
 ---
 
@@ -965,6 +1002,13 @@ CORS(app, resources={
 
 ## 🔗 유용한 링크
 
+### 프로젝트 문서
+- **세부 기술 문서**: [documentation/](./documentation/) 폴더
+  - [PDF 변환 시스템](./documentation/pdf-conversion-system.md)
+  - [한글 폰트 문제 해결](./documentation/korean-font-fix.md)
+  - [개발 이력 (2025-10-10)](./documentation/dev-log-2025-10-10.md)
+
+### 외부 리소스
 - **Render 대시보드**: https://dashboard.render.com
 - **GitHub 저장소**: https://github.com/Haeminway1/htmldesignersite
 - **AI API 문서**:

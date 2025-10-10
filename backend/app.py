@@ -205,6 +205,48 @@ class WebHTMLDesigner:
             'enable-local-file-access': None
         }
     
+    def _ensure_korean_fonts(self, html_content: str) -> str:
+        """
+        HTML에 한글 폰트가 포함되어 있는지 확인하고, 없으면 추가
+        PDF 변환 시 한글 깨짐 방지
+        """
+        # 이미 Noto Sans KR이나 Pretendard 폰트가 포함되어 있는지 확인
+        has_korean_font = (
+            'Noto Sans KR' in html_content or 
+            'Pretendard' in html_content or
+            'fonts.googleapis.com' in html_content
+        )
+        
+        if has_korean_font:
+            logger.info("✅ HTML에 한글 폰트가 이미 포함되어 있습니다")
+            return html_content
+        
+        # 한글 폰트가 없으면 head에 추가
+        logger.info("⚠️ HTML에 한글 폰트가 없어서 추가합니다")
+        
+        font_link = '''
+    <!-- 한글 폰트 (PDF 변환 시 깨짐 방지) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html, * {
+            font-family: 'Noto Sans KR', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+        }
+    </style>
+'''
+        
+        # </head> 태그 앞에 폰트 링크 삽입
+        if '</head>' in html_content:
+            html_content = html_content.replace('</head>', f'{font_link}</head>')
+        elif '<head>' in html_content:
+            html_content = html_content.replace('<head>', f'<head>{font_link}')
+        else:
+            # head 태그가 없으면 html 태그 뒤에 추가
+            html_content = f'<!DOCTYPE html><html><head>{font_link}</head><body>' + html_content + '</body></html>'
+        
+        return html_content
+    
     def generate_html_from_files(self, prompt: str, uploaded_files: list) -> Dict[str, Any]:
         """파일들로부터 HTML 생성"""
         try:
@@ -295,10 +337,13 @@ class WebHTMLDesigner:
                 
                 logger.info("🔄 Chrome 엔진으로 PDF 변환 시도...")
                 
+                # HTML에 한글 폰트가 포함되어 있는지 확인 및 추가
+                html_with_fonts = self._ensure_korean_fonts(html_content)
+                
                 # 임시 HTML 파일 생성 (Chrome이 로드할 수 있도록)
                 temp_html_file = TEMP_DIR / f"temp_{uuid.uuid4().hex}.html"
                 with open(temp_html_file, 'w', encoding='utf-8') as f:
-                    f.write(html_content)
+                    f.write(html_with_fonts)
                 
                 # Chrome 옵션 설정
                 chrome_options = Options()
@@ -331,6 +376,20 @@ class WebHTMLDesigner:
                     
                     # 페이지 로딩 대기 (이미지, 폰트 등)
                     driver.implicitly_wait(3)
+                    
+                    # 웹폰트 로딩 완료 대기 (한글 깨짐 방지)
+                    import time
+                    time.sleep(2)  # 추가 2초 대기로 폰트 완전 로딩 보장
+                    
+                    # JavaScript로 폰트 로딩 확인
+                    try:
+                        driver.execute_script("""
+                            return document.fonts.ready;
+                        """)
+                        logger.info("✅ 웹폰트 로딩 완료")
+                    except:
+                        logger.warning("⚠️ 폰트 로딩 확인 실패 (계속 진행)")
+                        pass
                     
                     # Chrome의 인쇄 기능을 사용하여 PDF 생성
                     # Chrome 브라우저 "여백: 기본" 설정과 동일

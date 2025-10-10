@@ -50,12 +50,14 @@ fi
 echo "📥 Chrome 및 ChromeDriver 설치 중..."
 # Render는 Ubuntu 기반이므로 apt-get 사용 가능
 if command -v apt-get &> /dev/null; then
-    echo "📦 Chrome 설치 시도..."
-    # Chrome dependencies 설치
+    echo "📦 Chrome 및 한글 폰트 설치 시도..."
+    # Chrome dependencies 및 한글 폰트 설치
     apt-get update -qq || sudo apt-get update -qq || echo "⚠️ apt-get update 실패 (권한 제한)"
-    apt-get install -y -qq wget gnupg chromium-browser chromium-chromedriver || \
-    sudo apt-get install -y -qq wget gnupg chromium-browser chromium-chromedriver || \
-    echo "⚠️ Chrome 설치 실패 (권한 제한), 대체 방법 사용"
+    apt-get install -y -qq wget gnupg chromium-browser chromium-chromedriver \
+        fonts-noto-cjk fonts-noto-cjk-extra fonts-nanum fonts-nanum-coding || \
+    sudo apt-get install -y -qq wget gnupg chromium-browser chromium-chromedriver \
+        fonts-noto-cjk fonts-noto-cjk-extra fonts-nanum fonts-nanum-coding || \
+    echo "⚠️ Chrome/폰트 설치 실패 (권한 제한), 웹폰트 사용"
     
     # ChromeDriver 경로 확인
     if command -v chromium-chromedriver &> /dev/null; then
@@ -74,8 +76,15 @@ if command -v apt-get &> /dev/null; then
     else
         echo "⚠️ Chrome을 찾을 수 없습니다."
     fi
+    
+    # 한글 폰트 설치 확인
+    if fc-list | grep -i "noto" &> /dev/null; then
+        echo "✅ 한글 폰트 (Noto CJK) 설치 완료"
+    else
+        echo "⚠️ 한글 폰트를 찾을 수 없습니다. 웹폰트가 사용됩니다."
+    fi
 else
-    echo "⚠️ apt-get을 사용할 수 없는 환경입니다. Chrome 설치를 건너뜁니다."
+    echo "⚠️ apt-get을 사용할 수 없는 환경입니다. Chrome 및 한글 폰트 설치를 건너뜁니다."
 fi
 
 # wkhtmltopdf 다운로드 (폴백 옵션)
