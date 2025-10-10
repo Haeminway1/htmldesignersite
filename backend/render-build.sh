@@ -46,7 +46,39 @@ else
     echo "⚠️ ai_api_module 디렉토리를 찾을 수 없습니다"
 fi
 
-# wkhtmltopdf 다운로드 (선택적)
+# Chrome 및 ChromeDriver 설치 (PDF 변환용 - 최우선)
+echo "📥 Chrome 및 ChromeDriver 설치 중..."
+# Render는 Ubuntu 기반이므로 apt-get 사용 가능
+if command -v apt-get &> /dev/null; then
+    echo "📦 Chrome 설치 시도..."
+    # Chrome dependencies 설치
+    apt-get update -qq || sudo apt-get update -qq || echo "⚠️ apt-get update 실패 (권한 제한)"
+    apt-get install -y -qq wget gnupg chromium-browser chromium-chromedriver || \
+    sudo apt-get install -y -qq wget gnupg chromium-browser chromium-chromedriver || \
+    echo "⚠️ Chrome 설치 실패 (권한 제한), 대체 방법 사용"
+    
+    # ChromeDriver 경로 확인
+    if command -v chromium-chromedriver &> /dev/null; then
+        echo "✅ ChromeDriver 설치 완료: $(which chromium-chromedriver)"
+    elif command -v chromedriver &> /dev/null; then
+        echo "✅ ChromeDriver 설치 완료: $(which chromedriver)"
+    else
+        echo "⚠️ ChromeDriver를 찾을 수 없습니다. Selenium PDF 변환은 비활성화됩니다."
+    fi
+    
+    # Chrome 경로 확인
+    if command -v chromium-browser &> /dev/null; then
+        echo "✅ Chrome 설치 완료: $(which chromium-browser)"
+    elif command -v google-chrome &> /dev/null; then
+        echo "✅ Chrome 설치 완료: $(which google-chrome)"
+    else
+        echo "⚠️ Chrome을 찾을 수 없습니다."
+    fi
+else
+    echo "⚠️ apt-get을 사용할 수 없는 환경입니다. Chrome 설치를 건너뜁니다."
+fi
+
+# wkhtmltopdf 다운로드 (폴백 옵션)
 echo "📥 wkhtmltopdf 다운로드 중..."
 if [ -f "download_wkhtmltopdf.py" ]; then
     python3 download_wkhtmltopdf.py || echo "⚠️ wkhtmltopdf 다운로드 실패 (계속 진행)"
@@ -59,7 +91,7 @@ if [ -f "./bin/wkhtmltopdf" ]; then
     chmod +x ./bin/wkhtmltopdf
     echo "✅ wkhtmltopdf 실행 권한 설정 완료"
 else
-    echo "⚠️ wkhtmltopdf 바이너리를 찾을 수 없습니다. PDF 변환 기능이 비활성화됩니다."
+    echo "⚠️ wkhtmltopdf 바이너리를 찾을 수 없습니다. (Chrome 변환이 우선 사용됩니다)"
 fi
 
 # 환경 변수 확인

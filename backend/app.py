@@ -24,17 +24,35 @@ from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
-# PDF 변환 라이브러리 임포트 (우선순위: weasyprint > pdfkit)
+# PDF 변환 라이브러리 임포트
+# 우선순위: Chrome (Selenium) > weasyprint > pdfkit
 PDF_BACKEND = None
+PDF_BACKENDS_AVAILABLE = []
+
+# Chrome (Selenium) 체크
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    PDF_BACKENDS_AVAILABLE.append('chrome')
+except ImportError:
+    pass
+
+# WeasyPrint 체크
 try:
     from weasyprint import HTML as WeasyHTML
     PDF_BACKEND = 'weasyprint'
+    PDF_BACKENDS_AVAILABLE.append('weasyprint')
 except ImportError:
-    try:
-        import pdfkit
+    pass
+
+# pdfkit 체크
+try:
+    import pdfkit
+    if not PDF_BACKEND:
         PDF_BACKEND = 'pdfkit'
-    except ImportError:
-        pass
+    PDF_BACKENDS_AVAILABLE.append('pdfkit')
+except ImportError:
+    pass
 
 # AI API 모듈 가져오기
 ai_module_paths = [
@@ -110,12 +128,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # PDF 백엔드 로깅
+if 'chrome' in PDF_BACKENDS_AVAILABLE:
+    logger.info("✅ Chrome (Selenium) 사용 가능 (최우선, 가장 정확한 PDF 변환)")
 if PDF_BACKEND == 'weasyprint':
-    logger.info("✅ WeasyPrint 사용 (PDF 변환)")
+    logger.info("✅ WeasyPrint 폴백 사용 가능")
 elif PDF_BACKEND == 'pdfkit':
-    logger.info("⚠️ pdfkit 사용 (wkhtmltopdf 필요)")
-else:
+    logger.info("✅ pdfkit 폴백 사용 가능 (wkhtmltopdf 필요)")
+
+if not PDF_BACKENDS_AVAILABLE:
     logger.warning("⚠️ PDF 변환 라이브러리가 없습니다. HTML만 반환됩니다.")
+else:
+    logger.info(f"📦 사용 가능한 PDF 백엔드: {', '.join(PDF_BACKENDS_AVAILABLE)}")
 
 # 전역 변수
 TEMP_DIR = Path(tempfile.gettempdir()) / "html_designer"
@@ -251,7 +274,11 @@ class WebHTMLDesigner:
             }
     
     def html_to_pdf(self, html_content: str) -> Optional[str]:
-        """HTML을 PDF로 변환 (weasyprint 또는 pdfkit 사용)"""
+        """
+        HTML을 PDF로 변환
+        우선순위: Chrome (Selenium) > weasyprint > pdfkit
+        Chrome을 사용하면 브라우저에서 보이는 그대로 정확하게 PDF 변환
+        """
         global PDF_BACKEND
         
         try:
@@ -259,15 +286,103 @@ class WebHTMLDesigner:
             pdf_filename = f"output_{uuid.uuid4().hex}.pdf"
             pdf_path = TEMP_DIR / pdf_filename
             
+            # 1순위: Chrome (Selenium) 사용 - 가장 정확한 변환
+            try:
+                from selenium import webdriver
+                from selenium.webdriver.chrome.service import Service
+                from selenium.webdriver.chrome.options import Options
+                import base64
+                
+                logger.info("🔄 Chrome 엔진으로 PDF 변환 시도...")
+                
+                # 임시 HTML 파일 생성 (Chrome이 로드할 수 있도록)
+                temp_html_file = TEMP_DIR / f"temp_{uuid.uuid4().hex}.html"
+                with open(temp_html_file, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                
+                # Chrome 옵션 설정
+                chrome_options = Options()
+                chrome_options.add_argument('--headless')  # 백그라운드 실행
+                chrome_options.add_argument('--disable-gpu')
+                chrome_options.add_argument('--no-sandbox')
+                chrome_options.add_argument('--disable-dev-shm-usage')
+                chrome_options.add_argument('--disable-software-rasterizer')
+                
+                # Render/클라우드 환경에서 Chromium 바이너리 경로 설정
+                chrome_binary = None
+                if os.path.exists('/usr/bin/chromium-browser'):
+                    chrome_binary = '/usr/bin/chromium-browser'
+                elif os.path.exists('/usr/bin/chromium'):
+                    chrome_binary = '/usr/bin/chromium'
+                elif os.path.exists('/usr/bin/google-chrome'):
+                    chrome_binary = '/usr/bin/google-chrome'
+                
+                if chrome_binary:
+                    chrome_options.binary_location = chrome_binary
+                    logger.info(f"Chrome 바이너리 경로 설정: {chrome_binary}")
+                
+                # Chrome 드라이버 실행
+                driver = webdriver.Chrome(options=chrome_options)
+                
+                try:
+                    # HTML 파일 열기 (절대 경로 사용)
+                    html_path = temp_html_file.resolve()
+                    driver.get(f"file:///{html_path}")
+                    
+                    # 페이지 로딩 대기 (이미지, 폰트 등)
+                    driver.implicitly_wait(3)
+                    
+                    # Chrome의 인쇄 기능을 사용하여 PDF 생성
+                    # Chrome 브라우저 "여백: 기본" 설정과 동일
+                    print_options = {
+                        'landscape': False,
+                        'displayHeaderFooter': False,
+                        'printBackground': True,
+                        'preferCSSPageSize': False,
+                        'paperWidth': 8.27,     # A4 width in inches (210mm)
+                        'paperHeight': 11.69,   # A4 height in inches (297mm)
+                        'marginTop': 0.4,       # Chrome 기본 여백 (약 10mm)
+                        'marginBottom': 0.4,    # Chrome 기본 여백 (약 10mm)
+                        'marginLeft': 0.4,      # Chrome 기본 여백 (약 10mm)
+                        'marginRight': 0.4,     # Chrome 기본 여백 (약 10mm)
+                        'scale': 1.0
+                    }
+                    
+                    # Chrome DevTools Protocol을 사용하여 PDF 생성
+                    result = driver.execute_cdp_cmd('Page.printToPDF', print_options)
+                    
+                    # Base64로 인코딩된 PDF 데이터를 파일로 저장
+                    pdf_data = base64.b64decode(result['data'])
+                    with open(pdf_path, 'wb') as f:
+                        f.write(pdf_data)
+                    
+                    logger.info(f"✅ PDF 생성 완료 (Chrome): {pdf_path}")
+                    return str(pdf_path)
+                    
+                finally:
+                    driver.quit()
+                    # 임시 HTML 파일 삭제
+                    try:
+                        os.unlink(temp_html_file)
+                    except:
+                        pass
+                    
+            except ImportError:
+                logger.warning("⚠️ Selenium이 설치되지 않았습니다. 대체 방법으로 시도합니다.")
+            except Exception as chrome_err:
+                logger.warning(f"⚠️ Chrome 변환 실패: {chrome_err}. 대체 방법으로 시도합니다.")
+                import traceback
+                logger.debug(f"Chrome 오류 상세: {traceback.format_exc()}")
+            
+            # 2순위: WeasyPrint 사용
             if PDF_BACKEND == 'weasyprint':
-                # WeasyPrint 사용 (권장)
                 from weasyprint import HTML as WeasyHTML
                 WeasyHTML(string=html_content, base_url='.').write_pdf(str(pdf_path))
                 logger.info(f"✅ PDF 생성 완료 (WeasyPrint): {pdf_path}")
                 return str(pdf_path)
-                
+            
+            # 3순위: pdfkit 사용
             elif PDF_BACKEND == 'pdfkit':
-                # pdfkit 사용 (wkhtmltopdf 필요)
                 import pdfkit
                 config = pdfkit.configuration(wkhtmltopdf=self.wkhtmltopdf_path)
                 pdfkit.from_string(

@@ -11,8 +11,9 @@ limits>=3.0.0
 gunicorn>=21.2.0
 
 # PDF 변환 (선택적)
-pdfkit>=1.0.0
-weasyprint>=60.0
+selenium>=4.15.0  # Chrome 기반 PDF 변환 (가장 정확)
+pdfkit>=1.0.0     # 폴백 옵션
+weasyprint>=60.0  # 폴백 옵션
 
 # HTTP 클라이언트
 requests>=2.31.0
