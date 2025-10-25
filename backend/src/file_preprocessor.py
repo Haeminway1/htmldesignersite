@@ -22,13 +22,22 @@ import shutil
 
 try:
     from markitdown import MarkItDown
+    _MARKITDOWN_IMPORT_ERROR = None
 except ImportError as e:
-    print(f"❌ markitdown 패키지를 찾을 수 없습니다: {e}")
-    print("다음 명령으로 설치해주세요:")
-    print("pip install markitdown[all]")
-    print("또는 프로젝트 내 markitdown을 사용하려면:")
-    print("cd markitdown/packages/markitdown && pip install -e .")
-    sys.exit(1)
+    MarkItDown = None  # type: ignore[assignment]
+    _MARKITDOWN_IMPORT_ERROR = e
+
+
+class MarkItDownUnavailableError(RuntimeError):
+    """markitdown 패키지가 준비되지 않은 경우 발생하는 예외"""
+
+    def __init__(self, original_error: Optional[BaseException] = None):
+        message = (
+            "markitdown 패키지가 설치되어 있지 않아 파일 전처리를 진행할 수 없습니다. "
+            "pip install markitdown[all] 명령으로 설치하거나, 프로젝트 번들 버전을 설치해주세요."
+        )
+        super().__init__(message)
+        self.original_error = original_error
 
 
 class FilePreprocessor:
@@ -37,11 +46,14 @@ class FilePreprocessor:
     def __init__(self, input_dir: str = "worktable/input", output_dir: str = "worktable/output"):
         """
         전처리기 초기화
-        
+
         Args:
             input_dir: 입력 파일 디렉토리
             output_dir: 출력 디렉토리
         """
+        if MarkItDown is None:
+            raise MarkItDownUnavailableError(_MARKITDOWN_IMPORT_ERROR)
+
         # 스크립트 위치 기준으로 경로 해결
         script_dir = Path(__file__).parent
         
@@ -381,8 +393,13 @@ def main():
     
     args = parser.parse_args()
     
-    # 전처리기 초기화
-    preprocessor = FilePreprocessor(args.input, args.output)
+    try:
+        preprocessor = FilePreprocessor(args.input, args.output)
+    except MarkItDownUnavailableError as exc:
+        print(f"❌ {exc}")
+        if exc.original_error:
+            print(f"원인: {exc.original_error}")
+        return
     
     if args.list_formats:
         preprocessor.list_supported_formats()

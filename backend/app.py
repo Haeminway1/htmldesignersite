@@ -5,6 +5,7 @@ AI 기반 HTML 교재 생성기 - Flask 웹 애플리케이션
 Render 배포용 웹 서비스
 """
 
+import copy
 import os
 import sys
 import json
@@ -13,9 +14,10 @@ import logging
 import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import hashlib
 import mimetypes
+import shutil
 
 from flask import Flask, request, jsonify, send_file, send_from_directory, abort
 from flask_cors import CORS
@@ -170,17 +172,28 @@ def cleanup_temp_files():
         for file_hash, info in list(PDF_CACHE.items()):
             if current_time - info["created"] > PDF_CACHE_DURATION:
                 try:
-                    os.unlink(info["path"])
-                    del PDF_CACHE[file_hash]
-                except:
-                    pass
+                    pdf_path = info.get("path")
+                    if pdf_path and os.path.exists(pdf_path):
+                        os.unlink(pdf_path)
+                except Exception as cleanup_err:
+                    logger.warning(f"PDF 캐시 파일 삭제 실패({file_hash}): {cleanup_err}")
+                finally:
+                    PDF_CACHE.pop(file_hash, None)
     except Exception as e:
         logger.warning(f"임시 파일 정리 실패: {e}")
 
-def generate_content_hash(prompt: str, files_content: list) -> str:
+def generate_content_hash(prompt: str, files_content: List[object]) -> str:
     """프롬프트와 파일 내용으로 해시 생성"""
-    content = prompt + "".join(files_content)
-    return hashlib.md5(content.encode()).hexdigest()
+    hasher = hashlib.md5()
+    hasher.update((prompt or "").encode('utf-8'))
+    for content in files_content:
+        if content is None:
+            continue
+        if isinstance(content, bytes):
+            hasher.update(content)
+        else:
+            hasher.update(str(content).encode('utf-8', errors='ignore'))
+    return hasher.hexdigest()
 
 class WebHTMLDesigner:
     """웹용 HTML 디자이너 래퍼 클래스"""
@@ -196,10 +209,10 @@ class WebHTMLDesigner:
         # PDF 설정
         self.pdf_options = {
             'page-size': 'A4',
-            'margin-top': '0.75in',
-            'margin-right': '0.75in',
-            'margin-bottom': '0.75in',
-            'margin-left': '0.75in',
+            'margin-top': '0mm',
+            'margin-right': '0mm',
+            'margin-bottom': '0mm',
+            'margin-left': '0mm',
             'encoding': "UTF-8",
             'no-outline': None,
             'enable-local-file-access': None
@@ -217,14 +230,11 @@ class WebHTMLDesigner:
             'fonts.googleapis.com' in html_content
         )
         
-        if has_korean_font:
-            logger.info("✅ HTML에 한글 폰트가 이미 포함되어 있습니다")
-            return html_content
-        
-        # 한글 폰트가 없으면 head에 추가
-        logger.info("⚠️ HTML에 한글 폰트가 없어서 추가합니다")
-        
-        font_link = '''
+        injections = []
+
+        if not has_korean_font:
+            logger.info("⚠️ HTML에 한글 폰트가 없어서 추가합니다")
+            font_link = '''
     <!-- 한글 폰트 (PDF 변환 시 깨짐 방지) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -235,17 +245,191 @@ class WebHTMLDesigner:
         }
     </style>
 '''
-        
-        # </head> 태그 앞에 폰트 링크 삽입
-        if '</head>' in html_content:
-            html_content = html_content.replace('</head>', f'{font_link}</head>')
-        elif '<head>' in html_content:
-            html_content = html_content.replace('<head>', f'<head>{font_link}')
+            injections.append(font_link)
         else:
-            # head 태그가 없으면 html 태그 뒤에 추가
-            html_content = f'<!DOCTYPE html><html><head>{font_link}</head><body>' + html_content + '</body></html>'
-        
+            logger.info("✅ HTML에 한글 폰트가 이미 포함되어 있습니다")
+
+        if 'id="a4-layout-guard"' not in html_content:
+            layout_guard = '''
+    <!-- A4 레이아웃 가드 -->
+    <style id="a4-layout-guard">
+        :root {
+            --a4-width: 210mm;
+            --a4-height: 297mm;
+            --a4-margin: 12mm;
+        }
+        @page {
+            size: A4;
+            margin: var(--a4-margin);
+        }
+        html {
+            width: var(--a4-width);
+            min-height: var(--a4-height);
+            margin: 0 auto;
+            padding: 0;
+            box-sizing: border-box;
+            background: #ffffff;
+        }
+        body {
+            min-height: calc(var(--a4-height) - (var(--a4-margin) * 2));
+            margin: 0;
+            padding: var(--a4-margin);
+            box-sizing: border-box;
+            background: #ffffff;
+        }
+        *, *::before, *::after {
+            box-sizing: inherit;
+        }
+        body > * {
+            page-break-inside: avoid;
+        }
+        section, article, .page-section, .page, .a4-page {
+            page-break-inside: avoid;
+        }
+        img, table {
+            max-width: 100%;
+        }
+    </style>
+'''
+            injections.append(layout_guard)
+
+        if not injections:
+            return html_content
+
+        injection_block = ''.join(injections)
+
+        if '</head>' in html_content:
+            html_content = html_content.replace('</head>', f'{injection_block}</head>')
+        elif '<head>' in html_content:
+            html_content = html_content.replace('<head>', f'<head>{injection_block}')
+        else:
+            html_body = html_content
+            if '<body' in html_content:
+                html_body = html_content
+            else:
+                html_body = f'<body>{html_content}</body>'
+            html_content = f'<!DOCTYPE html><html lang="ko"><head>{injection_block}</head>{html_body}</html>'
+
         return html_content
+
+    def _fallback_text_extraction(self, saved_files: List[Path]) -> List[Tuple[str, str]]:
+        """markitdown이 없을 때 텍스트 기반 파일만 추출"""
+        processed: List[Tuple[str, str]] = []
+        text_extensions = {'.txt', '.md', '.csv', '.json', '.xml', '.html', '.htm'}
+        for file_path in saved_files:
+            try:
+                if file_path.suffix.lower() not in text_extensions:
+                    continue
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read().strip()
+                if content:
+                    processed.append((file_path.name, content))
+            except Exception as err:
+                logger.debug(f"텍스트 추출 실패({file_path.name}): {err}")
+        return processed
+
+    def _preprocess_uploaded_files(self, saved_files: List[Path]) -> List[Tuple[str, str]]:
+        """업로드된 파일을 Markdown으로 변환하여 텍스트 컨텍스트 확보"""
+        if not saved_files:
+            return []
+
+        try:
+            from file_preprocessor import FilePreprocessor, MarkItDownUnavailableError
+        except ImportError as exc:
+            logger.warning(f"파일 전처리 모듈을 불러오지 못했습니다: {exc}")
+            return self._fallback_text_extraction(saved_files)
+
+        output_dir = TEMP_DIR / f"preprocessed_{uuid.uuid4().hex}"
+        processed: List[Tuple[str, str]] = []
+
+        try:
+            preprocessor = FilePreprocessor(
+                input_dir=str(saved_files[0].parent),
+                output_dir=str(output_dir)
+            )
+        except MarkItDownUnavailableError as exc:
+            logger.warning(f"markitdown이 없어 첨부 파일 전처리를 건너뜁니다: {exc}")
+            return self._fallback_text_extraction(saved_files)
+        except Exception as exc:
+            logger.warning(f"파일 전처리기 초기화 실패: {exc}")
+            return self._fallback_text_extraction(saved_files)
+
+        try:
+            for file_path in saved_files:
+                try:
+                    result = preprocessor.convert_file_to_markdown(file_path)
+                    if not result or not result.get('success'):
+                        continue
+                    output_file = result.get('output_file')
+                    if not output_file or not os.path.exists(output_file):
+                        continue
+                    with open(output_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read().strip()
+                    if content:
+                        processed.append((file_path.name, content))
+                except Exception as err:
+                    logger.warning(f"파일 전처리 실패({file_path.name}): {err}")
+        finally:
+            shutil.rmtree(output_dir, ignore_errors=True)
+
+        if not processed:
+            return self._fallback_text_extraction(saved_files)
+
+        return processed
+
+    def _compose_prompt_with_attachments(self, prompt: str, attachments: List[Tuple[str, str]]) -> str:
+        """첨부 파일 요약을 프롬프트에 결합"""
+        effective_prompt = (prompt or '').strip()
+        if not attachments:
+            return effective_prompt or "첨부된 자료를 바탕으로 A4 규격의 전문적인 유인물을 만들어주세요."
+
+        sections = []
+        total_budget = 15000
+        used_budget = 0
+
+        for filename, content in attachments:
+            cleaned = (content or '').strip()
+            if not cleaned or used_budget >= total_budget:
+                continue
+            allowance = min(4000, total_budget - used_budget)
+            snippet = cleaned[:allowance].rstrip()
+            if len(cleaned) > allowance:
+                snippet += "\n...(이하 생략)..."
+            used_budget += len(snippet)
+            sections.append(f"[첨부: {filename}]\n{snippet}")
+
+        if not sections:
+            return effective_prompt or "첨부된 자료를 바탕으로 A4 규격의 전문적인 유인물을 만들어주세요."
+
+        if not effective_prompt:
+            effective_prompt = "첨부된 자료를 바탕으로 A4 규격의 전문적인 유인물을 만들어주세요."
+
+        attachment_block = "\n\n=== 첨부 자료 요약 ===\n" + "\n\n".join(sections)
+        return f"{effective_prompt}{attachment_block}"
+
+    def _log_layout_warnings(self, html_content: str) -> None:
+        """잠재적인 A4 레이아웃 문제를 로깅"""
+        lowered = html_content.lower()
+        warnings = []
+
+        if 'position:fixed' in lowered:
+            warnings.append('position:fixed')
+        if 'position:absolute' in lowered:
+            warnings.append('position:absolute')
+        if 'width:100vw' in lowered or 'width: 100vw' in lowered:
+            warnings.append('width:100vw')
+        if 'height:100vh' in lowered or 'height: 100vh' in lowered:
+            warnings.append('height:100vh')
+        if 'min-height:100vh' in lowered or 'min-height: 100vh' in lowered:
+            warnings.append('min-height:100vh')
+        if 'overflow:hidden' in lowered:
+            warnings.append('overflow:hidden')
+
+        if warnings:
+            logger.warning(
+                "A4 레이아웃 위험 요소 감지: %s",
+                ', '.join(sorted(set(warnings)))
+            )
     
     def generate_html_from_files(self, prompt: str, uploaded_files: list) -> Dict[str, Any]:
         """파일들로부터 HTML 생성"""
@@ -266,22 +450,25 @@ class WebHTMLDesigner:
                 saved_files.append(file_path)
                 logger.info(f"임시 파일 저장: {file_path}")
             
+            # 첨부 파일 전처리
+            preprocessed_texts = self._preprocess_uploaded_files(saved_files)
+            effective_prompt = self._compose_prompt_with_attachments(prompt, preprocessed_texts)
+
             # config 파일 임시 수정 (input_directory 경로 변경)
-            original_config = self.designer.config.copy()
-            if 'file_processing' not in self.designer.config:
-                self.designer.config['file_processing'] = {}
+            original_config = copy.deepcopy(self.designer.config)
+            self.designer.config.setdefault('file_processing', {})
             self.designer.config['file_processing']['input_directory'] = str(temp_input_dir)
-            
+
             # 프롬프트 임시 변경
-            original_prompt = self.designer.config.get('prompts', {}).get('user_prompt', '')
-            self.designer.config['prompts']['user_prompt'] = prompt
+            self.designer.config.setdefault('prompts', {})
+            self.designer.config['prompts']['user_prompt'] = effective_prompt
+            self.designer.config.setdefault('ai_settings', {})
             
             # HTML 생성 (Google 실패 시 모델 자동 폴백)
             try:
                 html_content, metadata = self.designer.generate_html()
             except Exception as gen_err:
                 logger.warning(f"1차 생성 실패, 모델 폴백 시도: {gen_err}")
-                original_model = self.designer.config.get('ai_settings', {}).get('model')
                 # 우선 빠른 모델로 폴백
                 self.designer.config['ai_settings']['model'] = 'fast'
                 try:
@@ -300,12 +487,29 @@ class WebHTMLDesigner:
                     os.unlink(file_path)
                 except:
                     pass
-            temp_input_dir.rmdir()
-            
+            shutil.rmtree(temp_input_dir, ignore_errors=True)
+
+            metadata = metadata or {}
+            if not isinstance(metadata, dict):
+                metadata = {'raw_metadata': metadata}
+
+            attachment_summary = [
+                {
+                    'filename': name,
+                    'characters': len(text)
+                }
+                for name, text in preprocessed_texts
+            ]
+
+            metadata['preprocessed_files'] = attachment_summary
+            metadata['effective_prompt'] = effective_prompt
+
             return {
                 'success': True,
                 'html': html_content,
-                'metadata': metadata
+                'metadata': metadata,
+                'preprocessed_files': attachment_summary,
+                'effective_prompt': effective_prompt
             }
             
         except Exception as e:
@@ -322,28 +526,32 @@ class WebHTMLDesigner:
         Chrome을 사용하면 브라우저에서 보이는 그대로 정확하게 PDF 변환
         """
         global PDF_BACKEND
-        
+
         try:
             # PDF 파일 경로 생성
             pdf_filename = f"output_{uuid.uuid4().hex}.pdf"
             pdf_path = TEMP_DIR / pdf_filename
-            
+
+            prepared_html = self._ensure_korean_fonts(html_content)
+            self._log_layout_warnings(prepared_html)
+
+            if not PDF_BACKENDS_AVAILABLE:
+                logger.warning("PDF 변환 라이브러리가 없어 HTML만 반환됩니다")
+                return None
+
             # 1순위: Chrome (Selenium) 사용 - 가장 정확한 변환
             try:
                 from selenium import webdriver
                 from selenium.webdriver.chrome.service import Service
                 from selenium.webdriver.chrome.options import Options
                 import base64
-                
+
                 logger.info("🔄 Chrome 엔진으로 PDF 변환 시도...")
-                
-                # HTML에 한글 폰트가 포함되어 있는지 확인 및 추가
-                html_with_fonts = self._ensure_korean_fonts(html_content)
-                
+
                 # 임시 HTML 파일 생성 (Chrome이 로드할 수 있도록)
                 temp_html_file = TEMP_DIR / f"temp_{uuid.uuid4().hex}.html"
                 with open(temp_html_file, 'w', encoding='utf-8') as f:
-                    f.write(html_with_fonts)
+                    f.write(prepared_html)
                 
                 # Chrome 옵션 설정
                 chrome_options = Options()
@@ -397,13 +605,13 @@ class WebHTMLDesigner:
                         'landscape': False,
                         'displayHeaderFooter': False,
                         'printBackground': True,
-                        'preferCSSPageSize': False,
-                        'paperWidth': 8.27,     # A4 width in inches (210mm)
-                        'paperHeight': 11.69,   # A4 height in inches (297mm)
-                        'marginTop': 0.4,       # Chrome 기본 여백 (약 10mm)
-                        'marginBottom': 0.4,    # Chrome 기본 여백 (약 10mm)
-                        'marginLeft': 0.4,      # Chrome 기본 여백 (약 10mm)
-                        'marginRight': 0.4,     # Chrome 기본 여백 (약 10mm)
+                        'preferCSSPageSize': True,
+                        'paperWidth': 8.27,
+                        'paperHeight': 11.69,
+                        'marginTop': 0,
+                        'marginBottom': 0,
+                        'marginLeft': 0,
+                        'marginRight': 0,
                         'scale': 1.0
                     }
                     
@@ -436,17 +644,17 @@ class WebHTMLDesigner:
             # 2순위: WeasyPrint 사용
             if PDF_BACKEND == 'weasyprint':
                 from weasyprint import HTML as WeasyHTML
-                WeasyHTML(string=html_content, base_url='.').write_pdf(str(pdf_path))
+                WeasyHTML(string=prepared_html, base_url='.').write_pdf(str(pdf_path))
                 logger.info(f"✅ PDF 생성 완료 (WeasyPrint): {pdf_path}")
                 return str(pdf_path)
-            
+
             # 3순위: pdfkit 사용
             elif PDF_BACKEND == 'pdfkit':
                 import pdfkit
                 config = pdfkit.configuration(wkhtmltopdf=self.wkhtmltopdf_path)
                 pdfkit.from_string(
-                    html_content, 
-                    str(pdf_path), 
+                    prepared_html,
+                    str(pdf_path),
                     options=self.pdf_options,
                     configuration=config
                 )
@@ -576,13 +784,8 @@ def convert_files():
                 'detail': 'AI API 모듈이 로드되지 않았습니다. API 키를 확인하세요.'
             }), 503
         
-        # 프롬프트 가져오기
+        # 프롬프트 가져오기 (파일만으로도 허용)
         prompt = request.form.get('prompt', '').strip()
-        if not prompt:
-            return jsonify({
-                'error': '프롬프트를 입력해주세요.',
-                'code': 'MISSING_PROMPT'
-            }), 400
         
         # 파일들 가져오기 (선택사항)
         files = request.files.getlist('files')
@@ -623,13 +826,19 @@ def convert_files():
             logger.info(f"✅ 파일 추가됨: {file.filename} ({file_size / 1024:.2f} KB)")
         
         logger.info(f"📊 총 {len(uploaded_files)}개 파일 준비 완료 (총 {total_size / 1024 / 1024:.2f} MB)")
-        
+
+        if not prompt and not uploaded_files:
+            return jsonify({
+                'error': '프롬프트 또는 파일 중 하나는 반드시 제공해야 합니다.',
+                'code': 'MISSING_INPUT'
+            }), 400
+
         # 파일이 하나도 없어도 진행 (텍스트 프롬프트만으로 생성)
         
         # 캐시 체크
-        files_content = [f['content'].decode('utf-8', errors='ignore') for f in uploaded_files] if uploaded_files else []
-        content_hash = generate_content_hash(prompt, files_content)
-        
+        file_hash_inputs = [f['content'] for f in uploaded_files] if uploaded_files else []
+        content_hash = generate_content_hash(prompt, file_hash_inputs)
+
         if content_hash in PDF_CACHE:
             cache_info = PDF_CACHE[content_hash]
             if datetime.now() - cache_info["created"] < PDF_CACHE_DURATION:
@@ -638,8 +847,11 @@ def convert_files():
                     return jsonify({
                         'success': True,
                         'pdf_url': f'/api/file/{content_hash}.pdf',
-                        'cached': True
+                        'cached': True,
+                        'effective_prompt': cache_info.get('effective_prompt')
                     })
+                else:
+                    PDF_CACHE.pop(content_hash, None)
         
         # HTML 생성 (파일 유무에 따라 분기)
         web_designer = get_designer()
@@ -647,11 +859,21 @@ def convert_files():
             result = web_designer.generate_html_from_files(prompt, uploaded_files)
         else:
             # 파일 없이 생성: 기존 config의 입력 디렉토리를 건드리지 않고 프롬프트만 사용
-            original_config = web_designer.designer.config.copy()
+            original_config = copy.deepcopy(web_designer.designer.config)
             try:
-                web_designer.designer.config['prompts']['user_prompt'] = prompt
+                effective_prompt = (prompt or "첨부된 자료 없이도 A4 규격의 전문적인 유인물을 만들어주세요.")
+                web_designer.designer.config.setdefault('prompts', {})
+                web_designer.designer.config['prompts']['user_prompt'] = effective_prompt
                 html, meta = web_designer.designer.generate_html()
-                result = { 'success': True, 'html': html, 'metadata': meta }
+                if not isinstance(meta, dict):
+                    meta = {'raw_metadata': meta}
+                meta.setdefault('effective_prompt', effective_prompt)
+                result = {
+                    'success': True,
+                    'html': html,
+                    'metadata': meta,
+                    'effective_prompt': effective_prompt
+                }
             finally:
                 web_designer.designer.config = original_config
         
@@ -675,21 +897,24 @@ def convert_files():
                 'html': result['html'],
                 'pdf_available': False,
                 'metadata': result['metadata'],
-                'message': 'HTML 생성 완료 (PDF 변환 불가능)'
+                'message': 'HTML 생성 완료 (PDF 변환 불가능)',
+                'effective_prompt': result.get('effective_prompt')
             })
-        
+
         # 캐시에 저장
         PDF_CACHE[content_hash] = {
             'path': pdf_path,
-            'created': datetime.now()
+            'created': datetime.now(),
+            'effective_prompt': result.get('effective_prompt')
         }
-        
+
         return jsonify({
             'success': True,
             'pdf_url': f'/api/file/{content_hash}.pdf',
             'html': result['html'],  # HTML도 함께 반환
             'metadata': result['metadata'],
-            'cached': False
+            'cached': False,
+            'effective_prompt': result.get('effective_prompt')
         })
         
     except Exception as e:
