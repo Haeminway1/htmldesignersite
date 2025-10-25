@@ -1,10 +1,21 @@
 // DOMContentLoaded로 모든 엘리먼트가 준비된 뒤에만 코드 실행 + async로 'await' 사용 허용
 document.addEventListener('DOMContentLoaded', async function () {
   // ====== Config ======
-  // 배포 후 백엔드 URL로 교체하세요. 예: https://your-backend.onrender.com
-  const API_BASE = window.location.hostname === 'localhost' 
-      ? 'http://localhost:5000' 
-      : 'https://htmldesignersite.onrender.com';
+  // window.__HTM_DESIGNER_API_BASE__ 값을 지정하면 우선 사용합니다.
+  const rawConfiguredBase = (typeof window.__HTM_DESIGNER_API_BASE__ === 'string')
+    ? window.__HTM_DESIGNER_API_BASE__.trim()
+    : '';
+  const API_BASE = (() => {
+    if (rawConfiguredBase) {
+      return rawConfiguredBase.replace(/\/$/, '');
+    }
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (isLocal) {
+      return 'http://localhost:5000';
+    }
+    return window.location.origin.replace(/\/$/, '');
+  })();
 
   // ====== Elements ======
   const promptEl   = document.getElementById('prompt');
@@ -86,7 +97,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     url: '',
     type: '', // 'pdf' or 'html'
     filename: '',
-    originalPrompt: ''
+    originalPrompt: '',
+    effectivePrompt: ''
   };
 
   // ====== Guard: 필수 요소 점검 ======
@@ -235,14 +247,15 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   // ====== Result Modal Functions ======
-  function showResultModal(html, url, type, filename = '') {
+  function showResultModal(html, url, type, filename = '', effectivePrompt = null) {
     currentResult = {
       html: html,
       url: url,
       type: type,
       filename: filename || `handout_${new Date().toISOString().slice(0,10)}.${type === 'pdf' ? 'pdf' : 'html'}`,
-      originalPrompt: promptEl.value
+      originalPrompt: effectivePrompt ?? promptEl.value
     };
+    currentResult.effectivePrompt = currentResult.originalPrompt;
 
     // PDF 버튼 표시/숨김
     if (type === 'pdf') {
@@ -294,7 +307,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   modalEditBtn.addEventListener('click', () => {
     // 프롬프트를 .md 파일로 추가
-    const promptBlob = new Blob([currentResult.originalPrompt], { type: 'text/markdown;charset=utf-8' });
+    const promptSource = currentResult.effectivePrompt ?? currentResult.originalPrompt ?? '';
+    const promptBlob = new Blob([promptSource], { type: 'text/markdown;charset=utf-8' });
     const promptFile = new File([promptBlob], 'prompt.md', { type: 'text/markdown' });
 
     // 결과물을 .html 파일로 추가
@@ -411,13 +425,17 @@ document.addEventListener('DOMContentLoaded', async function () {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
 
-      const res = await fetch(`${API_BASE}/api/convert`, { 
-        method: 'POST', 
-        body: fd,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+      let res;
+      try {
+        res = await fetch(`${API_BASE}/api/convert`, {
+          method: 'POST',
+          body: fd,
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
       const j = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -431,7 +449,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         const htmlContent = j.html || '';
         
         // 생성 완료 팝업 표시
-        showResultModal(htmlContent, pdfUrl, 'pdf');
+        const effectivePrompt = j.effective_prompt || prompt;
+        showResultModal(htmlContent, pdfUrl, 'pdf', '', effectivePrompt);
       } else if (j && j.html) {
         // PDF 변환 실패, HTML만 제공
         const blob = new Blob([j.html], { type: 'text/html;charset=utf-8' });
@@ -439,7 +458,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         const filename = `handout_${new Date().toISOString().slice(0,10)}.html`;
         
         // 생성 완료 팝업 표시
-        showResultModal(j.html, url, 'html', filename);
+        const effectivePrompt = j.effective_prompt || prompt;
+        showResultModal(j.html, url, 'html', filename, effectivePrompt);
       } else {
         statusEl.textContent = 'PDF 링크를 받지 못했습니다.';
       }
